@@ -1,7 +1,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include "FileReader.cpp"
+#include "SimulationResultsFileReader.cpp"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -124,73 +124,64 @@ void render()
 
 int main()
 {
-// 	glfwInit();
-// 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-// 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-// 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-//
-// #ifdef __APPLE__
-// 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); 
-// #endif
-//
-// 	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "DEFFEM Posprocessing", nullptr, nullptr);
-// 	if (window == nullptr)
-// 	{
-// 		std::cout << "Failed to create GLFW window" << std::endl;
-// 		glfwTerminate();
-// 		return -1;
-// 	}
-// 	glfwMakeContextCurrent(window);
-//
-// 	if (!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
-// 	{
-// 		std::cout << "Failed to initialize GLAD" << std::endl;
-// 		return -1;
-// 	}
-//
-// 	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
-//
-// 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-//
-// 	while (!glfwWindowShouldClose(window))
-// 	{
-// 		// input
-// 		processInput(window);
-//
-// 		// rendering
-// 		render();
-//
-// 		// check and call events and swap the buffers
-// 		glfwSwapBuffers(window);
-// 		glfwPollEvents();
-// 	}
-//
-// 	// // optional: de-allocate all resources once they've outlived their purpose:
-// 	// // ------------------------------------------------------------------------
-// 	// glDeleteVertexArrays(1, &VAO);
-// 	// glDeleteBuffers(1, &VBO);
-// 	// glDeleteBuffers(1, &EBO);
-//
-// 	glfwTerminate();
+	glfwInit();
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef __APPLE__
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); 
+#endif
+
+	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "DEFFEM Posprocessing", nullptr, nullptr);
+	if (window == nullptr)
+	{
+		std::cout << "Failed to create GLFW window" << std::endl;
+		glfwTerminate();
+		return -1;
+	}
+	glfwMakeContextCurrent(window);
+
+	if (!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
+	{
+		std::cout << "Failed to initialize GLAD" << std::endl;
+		return -1;
+	}
+
+	glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 
-	size_t vertSize = 5616;
-	size_t indSize = 8550;
-	auto filename = "vel_x000.k";
+	const auto filename = "temperature 00001.k";
+	vector<float> vertices;
+	vector<float> values;
+	vector<unsigned int> indices;
 
-	auto vertices = FileReader::readVertices(filename, vertSize);
-	auto indices = FileReader::readIndices(filename, indSize);
+	SimulationResultsFileReader::readVertices(filename, vertices, values);
+	SimulationResultsFileReader::readIndices(filename, indices);
 
-	// cout << "Vertices:\n";
-	// for (int i = 0; i < vertSize; i++)
-	// {
-	// 	cout << vertices[i] << " ";
-	// }
-	// cout << "\nIndices:\n";
-	// for (int i = 0; i < indSize; i++)
-	// {
-	// 	cout << indices[i] << " ";
-	// }
+
+	while (!glfwWindowShouldClose(window))
+	{
+		// input
+		processInput(window);
+
+		// rendering
+		render();
+
+		// check and call events and swap the buffers
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+	}
+
+	// // optional: de-allocate all resources once they've outlived their purpose:
+	// // ------------------------------------------------------------------------
+	// glDeleteVertexArrays(1, &VAO);
+	// glDeleteBuffers(1, &VBO);
+	// glDeleteBuffers(1, &EBO);
+
+	glfwTerminate();
 
 	return 0;
 }

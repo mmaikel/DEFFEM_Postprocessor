@@ -21,7 +21,7 @@
     <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FileReader.cpp">
+    <ClCompile Include="SimulationResultsFileReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -35,6 +35,9 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="test.k">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="temperature 00001.k">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
