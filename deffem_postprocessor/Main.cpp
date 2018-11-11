@@ -174,8 +174,23 @@ int main()
 // 	glfwTerminate();
 
 
-	FileReader::readVertices("test.k");
+	size_t vertSize = 5616;
+	size_t indSize = 8550;
+	auto filename = "vel_x000.k";
 
+	auto vertices = FileReader::readVertices(filename, vertSize);
+	auto indices = FileReader::readIndices(filename, indSize);
+
+	// cout << "Vertices:\n";
+	// for (int i = 0; i < vertSize; i++)
+	// {
+	// 	cout << vertices[i] << " ";
+	// }
+	// cout << "\nIndices:\n";
+	// for (int i = 0; i < indSize; i++)
+	// {
+	// 	cout << indices[i] << " ";
+	// }
 
 	return 0;
 }
