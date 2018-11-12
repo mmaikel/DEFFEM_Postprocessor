@@ -123,23 +123,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="enumerate.cpp" />
-    <ClCompile Include="Shader.cpp" />
-    <ClCompile Include="SimulationResultsFileReader.cpp" />
-    <ClCompile Include="glad.c" />
-    <ClCompile Include="Main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="resource.h" />
-    <ClInclude Include="Shader.h" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="resources\shader.fs" />
     <None Include="resources\shader.vs" />
     <None Include="resources\temperature 00001.k" />
     <None Include="resources\temperature 00807.k" />
     <None Include="resources\test.k" />
     <None Include="resources\vel_x000.k" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\enumerate.cpp" />
+    <ClCompile Include="src\glad.c" />
+    <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\Shader.cpp" />
+    <ClCompile Include="src\SimulationResultsFileReader.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="headers\resource.h" />
+    <ClInclude Include="headers\Shader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
