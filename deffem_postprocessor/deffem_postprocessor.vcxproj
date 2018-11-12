@@ -131,14 +131,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Shader.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shader.fs" />
-    <None Include="shader.vs" />
-    <None Include="temperature 00001.k" />
-    <None Include="temperature 00807.k" />
-    <None Include="test.k" />
-    <None Include="vel_x000.k" />
+    <None Include="resources\shader.fs" />
+    <None Include="resources\shader.vs" />
+    <None Include="resources\temperature 00001.k" />
+    <None Include="resources\temperature 00807.k" />
+    <None Include="resources\test.k" />
+    <None Include="resources\vel_x000.k" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

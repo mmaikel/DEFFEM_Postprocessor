@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Shader files">
+      <UniqueIdentifier>{17fc13fb-91bb-4b76-aea2-8a0887e4d2a6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -35,25 +38,28 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="vel_x000.k">
+    <None Include="resources\temperature 00001.k">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="test.k">
+    <None Include="resources\temperature 00807.k">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="temperature 00001.k">
+    <None Include="resources\test.k">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="shader.fs">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="shader.vs">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="temperature 00807.k">
+    <None Include="resources\vel_x000.k">
       <Filter>Resource Files</Filter>
+    </None>
+    <None Include="resources\shader.fs">
+      <Filter>Shader files</Filter>
+    </None>
+    <None Include="resources\shader.vs">
+      <Filter>Shader files</Filter>
     </None>
   </ItemGroup>
 </Project>

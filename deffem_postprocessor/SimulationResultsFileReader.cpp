@@ -18,12 +18,12 @@ public:
         string section;
         vector<float> values;
         vector<float> vertices;
-
         MinMaxValue minMax{};
         auto initial = true;
 
         file.open(filename);
 
+        // Read from result file's sections into vectors: `vertices`, `values`, `indices`
         while (file.is_open() && !file.eof() && getline(file, line))
         {
             if (checkSectionChanged(line, section))
@@ -48,17 +48,16 @@ public:
                 throw std::runtime_error(ss.str());
             }
         }
-        cout << minMax.min << "\t" << minMax.max << endl;
 
+        // Compose a vector with following structure: x1, y1, z1, r1, g1, b1, x2, y2, z2, r2, g2, b2, ... 
         for (auto val : enumerate(values))
         {
             const float normalizedVal = (val.item - minMax.min) / (minMax.max - minMax.min);
+            const unsigned int insertIdx = val.index * 3;
             float r, g, b;
+          
             getHeatMapColor(normalizedVal, &r, &g, &b);
-            cout << r << " " << g << " " << b << endl;
 
-            const unsigned int insertIdx = (val.index * 3);
-            cout << val.index << endl;
             if (insertIdx < vertices.size())
             {
                 verticesAndColors.push_back(vertices[insertIdx]);
@@ -70,6 +69,11 @@ public:
             verticesAndColors.push_back(g);
             verticesAndColors.push_back(b);
         }
+
+        vertices.clear();
+        vertices.shrink_to_fit();
+        values.clear();
+        values.shrink_to_fit();
 
         file.close();
         return 0;
@@ -88,7 +92,7 @@ private:
     {
         std::stringstream ss(line);
         string element;
-        string node_number;
+        string nodeNumber;
         auto idx = 0;
 
         while (getline(ss, element, ','))
@@ -158,7 +162,7 @@ private:
         return false;
     }
 
-    static bool getHeatMapColor(float value, float* red, float* green, float* blue)
+    static void getHeatMapColor(float value, float* red, float* green, float* blue)
     {
         const int NUM_COLORS = 4;
         static float color[NUM_COLORS][3] = {{0, 0, 1}, {0, 1, 0}, {1, 1, 0}, {1, 0, 0}};
@@ -181,7 +185,5 @@ private:
         *red = (color[idx2][0] - color[idx1][0]) * fractBetween + color[idx1][0];
         *green = (color[idx2][1] - color[idx1][1]) * fractBetween + color[idx1][1];
         *blue = (color[idx2][2] - color[idx1][2]) * fractBetween + color[idx1][2];
-
-        return true;
     }
 };
