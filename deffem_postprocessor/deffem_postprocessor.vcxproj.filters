@@ -24,6 +24,12 @@
     <ClCompile Include="SimulationResultsFileReader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="enumerate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
@@ -38,6 +44,15 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="temperature 00001.k">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shader.fs">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="shader.vs">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="temperature 00807.k">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
