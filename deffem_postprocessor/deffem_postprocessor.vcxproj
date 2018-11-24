@@ -123,12 +123,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="resources\shader.fs" />
-    <None Include="resources\shader.vs" />
     <None Include="resources\temperature 00001.k" />
     <None Include="resources\temperature 00807.k" />
     <None Include="resources\test.k" />
     <None Include="resources\vel_x000.k" />
+    <None Include="shaders\shader.fs" />
+    <None Include="shaders\shader.vs" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\enumerate.cpp" />

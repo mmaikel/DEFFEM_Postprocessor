@@ -30,10 +30,10 @@
     <None Include="resources\vel_x000.k">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="resources\shader.fs">
+    <None Include="shaders\shader.fs">
       <Filter>Shader files</Filter>
     </None>
-    <None Include="resources\shader.vs">
+    <None Include="shaders\shader.vs">
       <Filter>Shader files</Filter>
     </None>
   </ItemGroup>

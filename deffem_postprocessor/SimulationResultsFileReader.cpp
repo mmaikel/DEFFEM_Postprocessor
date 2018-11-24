@@ -3,7 +3,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include "enumerate.cpp"
+#include "headers/enumerate.cpp"
 
 using namespace std;
 
@@ -22,15 +22,6 @@ public:
         auto initial = true;
 
         file.open(filename);
-
-        if (file.is_open())
-        {
-            cout << "[INFO]\tReading from file \"" << filename << "\"" << endl;
-        }
-        else
-        {
-            cout << "[ERROR]\tFailed to open file \"" << filename << "\"" << endl;
-        }
 
         // Read from result file's sections into vectors: `vertices`, `values`, `indices`
         while (file.is_open() && !file.eof() && getline(file, line))
@@ -64,7 +55,7 @@ public:
             const float normalizedVal = (val.item - minMax.min) / (minMax.max - minMax.min);
             const unsigned int insertIdx = val.index * 3;
             float r, g, b;
-
+          
             getHeatMapColor(normalizedVal, &r, &g, &b);
 
             if (insertIdx < vertices.size())
@@ -78,13 +69,6 @@ public:
             verticesAndColors.push_back(g);
             verticesAndColors.push_back(b);
         }
-
-        cout << "[INFO]\tFile \"" << filename << "\" was read successfully" << endl;
-        cout << "[INFO]\tNumber of vertices: " << vertices.size() << endl;
-        cout << "[INFO]\tNumber of indices: " << indices.size() << endl;
-        cout << "[INFO]\tMinimum value: " << minMax.min << endl;
-        cout << "[INFO]\tMaximum value: " << minMax.max << endl;
-
 
         vertices.clear();
         vertices.shrink_to_fit();
@@ -157,12 +141,8 @@ private:
     {
         std::stringstream ss(line);
         string element;
-        string connectionNumber;
-        string sectionId;
 
-        getline(ss, connectionNumber, ',');
-        getline(ss, sectionId, ',');
-
+        getline(ss, element, ',');
 
         while (getline(ss, element, ','))
         {
@@ -174,11 +154,8 @@ private:
     {
         if (test[0] == '*')
         {
-            if (!(*&section).empty())
-                cout << "[INFO]\tFinished reading section " << section << endl;
-
             section = test;
-
+            cout << "[INFO]\tSection changed to " << section << endl;
             return true;
         }
 

@@ -1,4 +1,5 @@
 #include "../headers/Shader.h"
+#include <glm/glm/gtc/type_ptr.inl>
 
 Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 {
@@ -102,3 +103,10 @@ void Shader::setFloat(const std::string& name, float value) const
 {
     glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
 }
+
+void Shader::setMat4(const GLchar* name, glm::mat4 value) const
+{
+    const int location = glGetUniformLocation(ID, name);
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
+}
+
