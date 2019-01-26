@@ -74,6 +74,10 @@
     <IncludePath>C:\Users\maikelpc\Documents\cpp\Dependencies\Includes;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Users\maikelpc\Documents\cpp\Dependencies\Libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>C:\Users\maikelpc\Documents\cpp\Dependencies\Includes;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\maikelpc\Documents\cpp\Dependencies\Libs;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -82,7 +86,7 @@
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>glfw3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glfw3.lib;opengl32.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
@@ -127,17 +131,28 @@
     <None Include="resources\temperature 00807.k" />
     <None Include="resources\test.k" />
     <None Include="resources\vel_x000.k" />
+    <None Include="shaders\heatmap.fs" />
+    <None Include="shaders\heatmap.vs" />
     <None Include="shaders\shader.fs" />
     <None Include="shaders\shader.vs" />
+    <None Include="shaders\text.fs" />
+    <None Include="shaders\text.vs" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Character.cpp" />
+    <ClCompile Include="src\Color.cpp" />
+    <ClCompile Include="src\CustomObject.cpp" />
     <ClCompile Include="src\enumerate.cpp" />
+    <ClCompile Include="src\FileParser.cpp" />
     <ClCompile Include="src\glad.c" />
+    <ClCompile Include="src\Heatmap.cpp" />
     <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\Rectangle.cpp" />
     <ClCompile Include="src\Shader.cpp" />
-    <ClCompile Include="src\SimulationResultsFileReader.cpp" />
+    <ClCompile Include="src\Typer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="headers\Object.h" />
     <ClInclude Include="headers\resource.h" />
     <ClInclude Include="headers\Shader.h" />
   </ItemGroup>

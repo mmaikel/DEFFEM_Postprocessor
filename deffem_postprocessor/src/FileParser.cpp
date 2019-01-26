@@ -7,11 +7,11 @@
 
 using namespace std;
 
-class SimulationResultsFileReader
+class FileParser
 {
 public:
 
-    static int readSections(const char* filename, vector<float>& verticesAndColors, vector<unsigned int>& indices)
+    static int readSections(const char* filename, vector<float>& verticesAndColors, vector<unsigned int>& indices, float &min, float &max)
     {
         ifstream file;
         string line;
@@ -52,19 +52,19 @@ public:
             else
             {
                 std::stringstream ss;
-                ss << "ERROR::SimulationResultsFileReader::ReadSections\nUnknown section " << section <<
+                ss << "ERROR::FileParser::ReadSections\nUnknown section " << section <<
                     " found in results file " << filename << endl;
                 throw std::runtime_error(ss.str());
             }
         }
-
+        
         // Compose a vector with following structure: x1, y1, z1, r1, g1, b1, x2, y2, z2, r2, g2, b2, ... 
-        for (auto val : enumerate(values))
+        for (auto val : deffem::enumerate(values))
         {
             const float normalizedVal = (val.item - minMax.min) / (minMax.max - minMax.min);
             const unsigned int insertIdx = val.index * 3;
             float r, g, b;
-
+            
             getHeatMapColor(normalizedVal, &r, &g, &b);
 
             if (insertIdx < vertices.size())
@@ -90,6 +90,9 @@ public:
         vertices.shrink_to_fit();
         values.clear();
         values.shrink_to_fit();
+
+        min = minMax.min;
+        max = minMax.max;
 
         file.close();
         return 0;
@@ -163,11 +166,64 @@ private:
         getline(ss, connectionNumber, ',');
         getline(ss, sectionId, ',');
 
+        float indicesHelper[8];
+        int idx = 0;
 
-        while (getline(ss, element, ','))
+
+        while (idx < 8 && getline(ss, element, ','))
         {
-            indices.push_back(stoi(element) - 1);
+            indicesHelper[idx] = stoi(element) - 1;
+            idx++;
         }
+
+        if (idx > 8)
+        {
+            cout << "[ERROR]\tWrong input file format: There must be 8 node numbers in every row";
+        }
+
+        // TODO: Create convenient method for this:
+        indices.push_back(indicesHelper[0]);
+        indices.push_back(indicesHelper[1]);
+        indices.push_back(indicesHelper[2]);
+        indices.push_back(indicesHelper[0]);
+        indices.push_back(indicesHelper[2]);
+        indices.push_back(indicesHelper[3]);
+
+     
+        indices.push_back(indicesHelper[1]);
+        indices.push_back(indicesHelper[5]);
+        indices.push_back(indicesHelper[6]);
+        indices.push_back(indicesHelper[1]);
+        indices.push_back(indicesHelper[6]);
+        indices.push_back(indicesHelper[2]);
+
+        indices.push_back(indicesHelper[2]);
+        indices.push_back(indicesHelper[6]);
+        indices.push_back(indicesHelper[7]);
+        indices.push_back(indicesHelper[2]);
+        indices.push_back(indicesHelper[7]);
+        indices.push_back(indicesHelper[3]);
+
+        indices.push_back(indicesHelper[0]);
+        indices.push_back(indicesHelper[4]);
+        indices.push_back(indicesHelper[7]);
+        indices.push_back(indicesHelper[0]);
+        indices.push_back(indicesHelper[7]);
+        indices.push_back(indicesHelper[3]);
+
+        indices.push_back(indicesHelper[1]);
+        indices.push_back(indicesHelper[5]);
+        indices.push_back(indicesHelper[4]);
+        indices.push_back(indicesHelper[1]);
+        indices.push_back(indicesHelper[4]);
+        indices.push_back(indicesHelper[0]);
+
+        indices.push_back(indicesHelper[4]);
+        indices.push_back(indicesHelper[5]);
+        indices.push_back(indicesHelper[6]);
+        indices.push_back(indicesHelper[4]);
+        indices.push_back(indicesHelper[6]);
+        indices.push_back(indicesHelper[7]);
     }
 
     static bool checkSectionChanged(string test, string& section)
@@ -175,7 +231,7 @@ private:
         if (test[0] == '*')
         {
             if (!(*&section).empty())
-                cout << "[INFO]\tFinished reading section " << section << endl;
+                cout << "[DEBUG]\tFinished reading section " << section << endl;
 
             section = test;
 

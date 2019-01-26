@@ -16,6 +16,9 @@
     <Filter Include="Shader files">
       <UniqueIdentifier>{17fc13fb-91bb-4b76-aea2-8a0887e4d2a6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\api">
+      <UniqueIdentifier>{115e39e9-ec92-4a4e-a65d-676042d19922}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\temperature 00001.k">
@@ -36,9 +39,24 @@
     <None Include="shaders\shader.vs">
       <Filter>Shader files</Filter>
     </None>
+    <None Include="shaders\text.vs">
+      <Filter>Shader files</Filter>
+    </None>
+    <None Include="shaders\text.fs">
+      <Filter>Shader files</Filter>
+    </None>
+    <None Include="shaders\heatmap.vs">
+      <Filter>Shader files</Filter>
+    </None>
+    <None Include="shaders\heatmap.fs">
+      <Filter>Shader files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\enumerate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FileParser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\glad.c">
@@ -47,14 +65,32 @@
     <ClCompile Include="src\Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Shader.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\Color.cpp">
+      <Filter>Source Files\api</Filter>
     </ClCompile>
-    <ClCompile Include="src\SimulationResultsFileReader.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\CustomObject.cpp">
+      <Filter>Source Files\api</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Rectangle.cpp">
+      <Filter>Source Files\api</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Shader.cpp">
+      <Filter>Source Files\api</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Heatmap.cpp">
+      <Filter>Source Files\api</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Typer.cpp">
+      <Filter>Source Files\api</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Character.cpp">
+      <Filter>Source Files\api</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="headers\Object.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="headers\resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
