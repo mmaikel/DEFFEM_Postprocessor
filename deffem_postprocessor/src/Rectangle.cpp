@@ -9,17 +9,14 @@ namespace deffem
         Rectangle(GLfloat x, GLfloat y, GLfloat z, GLfloat width, GLfloat height)
         {
             GLfloat vertices[] = {
-                x, y, z, // 0
-                x + width, y, z, // 1
-                x + width, y + height, z, // 2
-                x, y + height, z // 3
+                x, y, z,                    
+                x + width, y, z,            
+                x + width, y + height, z,   
+                x, y + height, z            
             };
 
             GLint indices[] = {0, 1, 2, 0, 2, 3};
            
-            this->vertices = vertices;
-            this->indices = indices;
-
             glGenVertexArrays(1, &VAO);
             glGenBuffers(1, &VBO);
             glGenBuffers(1, &EBO);
@@ -31,12 +28,9 @@ namespace deffem
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(GLfloat), indices, GL_STATIC_DRAW);
 
-            // position attribute
+            // Position attribute
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
             glEnableVertexAttribArray(0);
-
-            glBindVertexArray(0);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
 
         Rectangle(GLfloat x, GLfloat y, GLfloat z, GLfloat width, GLfloat height, Color color)
@@ -50,9 +44,6 @@ namespace deffem
 
             GLint indices[] = {0, 1, 2, 0, 2, 3};
 
-            this->vertices = vertices;
-            this->indices = indices;
-
             glGenVertexArrays(1, &VAO);
             glGenBuffers(1, &VBO);
             glGenBuffers(1, &EBO);
@@ -64,16 +55,13 @@ namespace deffem
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(GLfloat), indices, GL_STATIC_DRAW);
 
-            // position attribute
+            // Position attribute
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), static_cast<void*>(nullptr));
             glEnableVertexAttribArray(0);
-            // color attribute
+            // Color attribute
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat),
                                   reinterpret_cast<void*>(3 * sizeof(GLfloat)));
             glEnableVertexAttribArray(1);
-
-            glBindVertexArray(0);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
 
         Rectangle(GLfloat x, GLfloat y, GLfloat z, GLfloat width, GLfloat height, Color color[4])
@@ -87,8 +75,6 @@ namespace deffem
 
             GLint indices[] = { 0, 1, 2, 0, 2, 3 };
 
-            this->vertices = vertices;
-            this->indices = indices;
 
             glGenVertexArrays(1, &VAO);
             glGenBuffers(1, &VBO);
@@ -101,29 +87,35 @@ namespace deffem
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(GLfloat), indices, GL_STATIC_DRAW);
 
-            // position attribute
+            // Position attribute
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), static_cast<void*>(nullptr));
             glEnableVertexAttribArray(0);
-            // color attribute
+            // Color attribute
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat),
                 reinterpret_cast<void*>(3 * sizeof(GLfloat)));
             glEnableVertexAttribArray(1);
+        }
 
-            glBindVertexArray(0);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
+        ~Rectangle()
+        {
+            glDeleteVertexArrays(1, &VAO);
+            glDeleteBuffers(1, &VBO);
+            glDeleteBuffers(1, &EBO);
         }
 
         void draw() override
         {
             glBindVertexArray(VAO);
             glDrawElements(GL_TRIANGLES, 6 * sizeof(GLfloat), GL_UNSIGNED_INT, nullptr);
+            glBindVertexArray(0);
         }
 
-        void draw(Shader shader) override
+        void draw(Shader *shader) override
         {
-            shader.use();
+            shader->use();
             glBindVertexArray(VAO);
             glDrawElements(GL_TRIANGLES, 6 * sizeof(GLfloat), GL_UNSIGNED_INT, nullptr);
+            glBindVertexArray(0);
         }
     };
 }

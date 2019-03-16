@@ -84,10 +84,13 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\Users\maikelpc\Documents\cpp\AntTweakBar\include;C:\Users\maikelpc\Documents\cpp\Dependencies\Includes;C:\Users\maikelpc\Documents\cpp\Dependencies\SFML-2.5.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>FT_FREETYPE_H;SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>glfw3.lib;opengl32.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;freetype.lib;glfw3.lib;AntTweakBar.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
+      <AdditionalLibraryDirectories>C:\Users\maikelpc\Documents\cpp\AntTweakBar\lib;C:\Users\maikelpc\Documents\cpp\Dependencies\Libs;C:\Users\maikelpc\Documents\cpp\Dependencies\SFML-2.5.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -106,10 +109,14 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\Users\maikelpc\Documents\cpp\AntTweakBar\include;C:\Users\maikelpc\Documents\cpp\Dependencies\Includes;C:\Users\maikelpc\Documents\cpp\Dependencies\SFML-2.5.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>FT_FREETYPE_H;SFML_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>C:\Users\maikelpc\Documents\cpp\AntTweakBar\lib;C:\Users\maikelpc\Documents\cpp\Dependencies\Libs;C:\Users\maikelpc\Documents\cpp\Dependencies\SFML-2.5.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;freetype.lib;glfw3.lib;AntTweakBar.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -131,6 +138,8 @@
     <None Include="resources\temperature 00807.k" />
     <None Include="resources\test.k" />
     <None Include="resources\vel_x000.k" />
+    <None Include="shaders\axes.fs" />
+    <None Include="shaders\axes.vs" />
     <None Include="shaders\heatmap.fs" />
     <None Include="shaders\heatmap.vs" />
     <None Include="shaders\shader.fs" />
@@ -139,6 +148,7 @@
     <None Include="shaders\text.vs" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Axes.cpp" />
     <ClCompile Include="src\Character.cpp" />
     <ClCompile Include="src\Color.cpp" />
     <ClCompile Include="src\CustomObject.cpp" />
@@ -146,15 +156,19 @@
     <ClCompile Include="src\FileParser.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\Heatmap.cpp" />
+    <ClCompile Include="src\Line.cpp" />
     <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\MeshPlane.cpp" />
     <ClCompile Include="src\Rectangle.cpp" />
     <ClCompile Include="src\Shader.cpp" />
     <ClCompile Include="src\Typer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="headers\Line.h" />
     <ClInclude Include="headers\Object.h" />
     <ClInclude Include="headers\resource.h" />
     <ClInclude Include="headers\Shader.h" />
+    <ClInclude Include="nanovg_gl.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

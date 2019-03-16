@@ -19,6 +19,9 @@
     <Filter Include="Source Files\api">
       <UniqueIdentifier>{115e39e9-ec92-4a4e-a65d-676042d19922}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\stage elements">
+      <UniqueIdentifier>{2afeab96-16f6-4aae-8190-d768cec5405b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\temperature 00001.k">
@@ -51,6 +54,12 @@
     <None Include="shaders\heatmap.fs">
       <Filter>Shader files</Filter>
     </None>
+    <None Include="shaders\axes.vs">
+      <Filter>Shader files</Filter>
+    </None>
+    <None Include="shaders\axes.fs">
+      <Filter>Shader files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\enumerate.cpp">
@@ -77,14 +86,23 @@
     <ClCompile Include="src\Shader.cpp">
       <Filter>Source Files\api</Filter>
     </ClCompile>
-    <ClCompile Include="src\Heatmap.cpp">
-      <Filter>Source Files\api</Filter>
-    </ClCompile>
     <ClCompile Include="src\Typer.cpp">
       <Filter>Source Files\api</Filter>
     </ClCompile>
     <ClCompile Include="src\Character.cpp">
       <Filter>Source Files\api</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Line.cpp">
+      <Filter>Source Files\api</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Heatmap.cpp">
+      <Filter>Source Files\stage elements</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MeshPlane.cpp">
+      <Filter>Source Files\stage elements</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Axes.cpp">
+      <Filter>Source Files\stage elements</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -95,6 +113,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="headers\Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\Line.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nanovg_gl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

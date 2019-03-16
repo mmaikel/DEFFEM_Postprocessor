@@ -10,9 +10,11 @@
 class Typer : Object
 {
 public:
+
     Typer()
     {
-       
+        Characters = std::map<GLchar, Character>();
+
         // FreeType
         FT_Library ft;
         // All functions return a value different than 0 whenever an error occurred
@@ -135,7 +137,7 @@ public:
         
     }
 
-    void draw(Shader shader) override
+    void draw(Shader *shader) override
     {
         
     }

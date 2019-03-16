@@ -7,33 +7,48 @@
 #include <glm/glm/gtc/matrix_transform.hpp>
 #include <glm/glm/gtc/type_ptr.inl>
 #include "Heatmap.cpp"
+#include "MeshPlane.cpp"
 
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow* window);
+// GLFW Callback functions definitions
 int max_nr_of_vertex_attrs_supported();
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void window_size_callback(GLFWwindow* window, int width, int height);
+void processInput(GLFWwindow* window);
 void rotateModel(Shader& shader);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+void loadModel(char const* filename);
+void file_drop_callback(GLFWwindow* window, int count, const char** paths);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
-// settings
-const float SCR_WIDTH = 800;
-const float SCR_HEIGHT = 600;
+// Settings
+float SCR_WIDTH = 1280;
+float SCR_HEIGHT = 720;
 
-float fov = 45.0f;
+// Field of view
+float fov = 25.0f;
 
-double oldX, oldY;
+// Last position of the mouse cursor
+glm::vec2 mousePos;
+
 double theta = 0.0f, phi = 3.14f / 2;
-double radius = 0.2f;
+double radius = 0.25f;
 
-double targetX = 0.005f;
-double targetY = 0.038f;
-double targetZ = 0.005f;
+// Point where the camera points to
+glm::vec3 cameraTarget = glm::vec3(0.0f, 0.033f, 0.0f);
 
+// Used to center the object on the stage
+glm::vec3 modelOriginOffset;
 
+// Projections
+glm::mat4 textProjection;
 
-GLuint VAO1, VBO1, VAO2, VBO2, VAO3, VBO3, EBO3;
+// Objects pointers
+deffem::CustomObject* deffemModel = NULL;
+Heatmap* heatmap = NULL;
+
+string currentFilename;
 
 
 int main()
@@ -42,15 +57,15 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
 
 #ifdef __APPLE__
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); 
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
 
     // Window initialization
-    // ---------------------
     GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "DEFFEM Postprocessing", nullptr, nullptr);
     if (window == nullptr)
     {
@@ -66,156 +81,194 @@ int main()
         return -1;
     }
 
+
     glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
     // Set OpenGL options
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_LINE_SMOOTH);
+    glLineWidth(0.5);
     // glEnable(GL_CULL_FACE);
-   
 
+    // Set callbacks
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetWindowSizeCallback(window, window_size_callback);
+    glfwSetDropCallback(window, file_drop_callback);
+    glfwSetKeyCallback(window, key_callback);
 
-    // Compile and setup the shader
-    Shader textShader("./shaders/text.vs", "./shaders/text.fs");
-    
-    glm::mat4 textProjection = glm::ortho(0.0f, static_cast<GLfloat>(SCR_WIDTH), 0.0f, static_cast<GLfloat>(SCR_HEIGHT));
-    textShader.use();
-    glUniformMatrix4fv(glGetUniformLocation(textShader.ID, "textProjection"), 1, GL_FALSE, glm::value_ptr(textProjection));
-    
+    // Used to display text on the screen
     Typer typer;
-    
 
-    // Read results from a file
-    // ------------------------
-    const auto filename = "resources/temperature 00807.k";
-    float min, max;
-    vector<float> vertices;
-    vector<unsigned int> indices;
-    vector<unsigned int> attribsSizes;
-    attribsSizes.push_back(3);
-    attribsSizes.push_back(3);
-   
-    FileParser::readSections(filename, vertices, indices, min, max);
-    
+    MeshPlane mesh(glm::vec3(0.0f, 0.0f, 0.0f), 1.0f, 1.0f, 60);
+
+    // Compile and setup the shaders
+    Shader textShader("./shaders/text.vs", "./shaders/text.fs");
     Shader modelShader("./shaders/shader.vs", "./shaders/shader.fs");
-    deffem::CustomObject deffemModel(vertices, indices, attribsSizes, 6);
+    Shader meshShader("./shaders/shader.vs", "./shaders/shader.fs");
+    Shader heatmapShader("./shaders/heatmap.vs", "./shaders/heatmap.fs");
 
-  
-    float axis[] = {
-        0.0f, -0.1f, 0.0f,
-        0.0f, 0.1f, 0.0f,
-    
-        -0.1f, 0.0f, 0.0f,
-        0.1f, 0.0f, 0.0f,
-    
-        0.0f, 0.0f, -0.1f,
-        0.0f, 0.0f, 0.1f,
-    };
+    textProjection = glm::ortho(0.0f, static_cast<GLfloat>(SCR_WIDTH), 0.0f,
+                                static_cast<GLfloat>(SCR_HEIGHT));
+    textShader.use();
+    textShader.setMat4("projection", textProjection);
 
-
-    glGenVertexArrays(1, &VAO1);
-    glGenBuffers(1, &VBO1);
-    glBindVertexArray(VAO1);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO1);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(axis), axis, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void*>(nullptr));
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-
-    Shader heatmapShader("./shaders/heatmap.vs", "./shaders/heatmap.fs"); 
-
-    glm::mat4 heatmapProjection = glm::ortho(0.0f, static_cast<GLfloat>(SCR_WIDTH), 0.0f, static_cast<GLfloat>(SCR_HEIGHT));
     heatmapShader.use();
-    glUniformMatrix4fv(glGetUniformLocation(heatmapShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(heatmapProjection));
-
-    Heatmap heatmap(25.0f, 350.0f, 50.0f, 200.0f, min, max);
+    heatmapShader.setMat4("projection", textProjection);
 
 
+    // Main loop
     while (!glfwWindowShouldClose(window))
     {
-        // input
         processInput(window);
 
-        // render
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        // Render background color
+        glClearColor(0.15f, 0.15f, 0.17f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-        // activate shader
+        // DEFFEM Model transformation
         modelShader.use();
-        
-        // create transformations
-        glm::mat4 model;
-        glm::mat4 projection = glm::perspective(glm::radians(fov), SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.0f);
-        glm::mat4 view = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first 
-        
-        double eyeX = targetX + radius * sin(phi) * cos(theta);
-        double eyeY = targetY + radius * cos(phi);
-        double eyeZ = targetZ + radius * sin(phi) * sin(theta);
-        view = glm::lookAt(glm::vec3(eyeX, eyeY, eyeZ),
-            glm::vec3(targetX, targetY, targetZ),
-            glm::vec3(0.0f, 1.0f, 0.0f));
-        
-        // pass transformation matrices to the shader
-        modelShader.setMat4("model", model);
+
+        auto projection = glm::perspective(glm::radians(fov), SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.0f);
+        auto view = glm::mat4(1.0f);
+        glm::vec3 eye;
+
+        eye.x = cameraTarget.x + radius * sin(phi) * cos(theta);
+        eye.y = cameraTarget.y + radius * cos(phi);
+        eye.z = cameraTarget.z + radius * sin(phi) * sin(theta);
+        view = glm::lookAt(glm::vec3(eye.x, eye.y, eye.z),
+                           glm::vec3(cameraTarget.x, cameraTarget.y, cameraTarget.z),
+                           glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 centered = glm::translate(glm::mat4(1.0f), modelOriginOffset);
+
+        // Pass transformation matrices to the shader
+        modelShader.setMat4("model", centered);
         modelShader.setMat4("projection", projection);
         modelShader.setMat4("view", view);
-        
-        // draw model
-        deffemModel.draw(modelShader);
-        
-        // draw axis
-        glBindVertexArray(VAO1);
-        glDrawArrays(GL_LINES, 0, 9);
+
+        // Mesh transformation
+        meshShader.use();
+
+        meshShader.setMat4("model", glm::mat4(1.0f));
+        meshShader.setMat4("projection", projection);
+        meshShader.setMat4("view", view);
 
 
-        // draw heatmap
-        heatmap.draw(heatmapShader, textShader);
+        // Draw DEFFEM model
+        if (deffemModel)
+        {
+            deffemModel->draw(&modelShader);
+        }
 
-        
-        typer.renderText(textShader, "DEFFEM POSTPROCESSING", 25.0f, 25.0f, 0.7f, glm::vec3(0.85f, 0.85f, 0.85f));
-        typer.renderText(textShader, "(C) Mikolaj Stepniewski", 630.0f, 570.0f, 0.3f, glm::vec3(1.0f, 1.0f, 1.0f));
+        // Draw mesh    
+        mesh.draw(&meshShader);
 
 
-        // check and call events and swap the buffers
+        // Draw heatmap
+        if (heatmap)
+        {
+            heatmap->draw(&heatmapShader, &textShader);
+        }
+
+        // Display filename
+        if (!currentFilename.empty()) {
+            typer.renderText(textShader, "File: " + currentFilename, 10.0f, 10.0f, 0.3f, glm::vec3(0.85f, 0.85f, 0.85f));
+        } else
+        {
+            typer.renderText(textShader, "Drag and drop a file here...", SCR_WIDTH/2 - 100.0, SCR_HEIGHT/2 - 5.0, 0.4f, glm::vec3(0.85f, 0.85f, 0.85f));
+        }
+
+
+        // Check and call events and swap the buffers
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    // // optional: de-allocate all resources once they've outlived their purpose:
-    // // ------------------------------------------------------------------------
-
-
-    glDeleteVertexArrays(1, &VAO1);
-    glDeleteBuffers(1, &VBO1);
-    glDeleteVertexArrays(1, &VAO2);
-    glDeleteBuffers(1, &VBO2);
-    glDeleteVertexArrays(1, &VAO3);
-    glDeleteBuffers(1, &VBO3);
-    glDeleteBuffers(1, &EBO3);
-
+    // De-allocate all resources once they've outlived their purpose:
+    delete deffemModel;
+    delete heatmap;
 
     glfwTerminate();
 
     return 0;
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
+void loadModel(char const* filename)
+{
+    float min, max;
+    vector<float> vertices;
+    vector<unsigned int> indices;
+    vector<unsigned int> attribsSizes;
+    attribsSizes.push_back(3);
+    attribsSizes.push_back(3);
+
+    FileParser::readSections(filename, vertices, indices, min, max);
+
+    modelOriginOffset.x = -vertices[0];
+    modelOriginOffset.y = -vertices[1];
+    modelOriginOffset.z = -vertices[2];
+
+    delete deffemModel;
+    delete heatmap;
+
+    if (indices.empty())
+    {
+        deffemModel = new deffem::CustomObject(vertices, attribsSizes, 6);
+    }
+    else
+    {
+        deffemModel = new deffem::CustomObject(vertices, indices, attribsSizes, 6);
+    }
+
+
+    heatmap = new Heatmap(25.0f, 500.0f, 50.0f, 200.0f, min, max);
+
+    currentFilename = filename;
+}
+
+// Process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+}
+
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    // Target camera up/down and left/right on the x axis
+    if (key == GLFW_KEY_UP)
+    {
+        cameraTarget.y += 0.001;
+    }
+    else if (key == GLFW_KEY_DOWN)
+    {
+        cameraTarget.y -= 0.001;
+    }
+    else if (key == GLFW_KEY_LEFT)
+    {
+        cameraTarget.x -= 0.001;
+    }
+    else if (key == GLFW_KEY_RIGHT)
+    {
+        cameraTarget.x += 0.001;
+    }
+
+    cout << cameraTarget.y << endl;
+}
+
+
+void file_drop_callback(GLFWwindow* window, int count, const char** paths)
+{
+    loadModel(paths[0]);
 }
 
 bool mousePressed = false;
@@ -239,8 +292,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
     if (mousePressed)
     {
-        theta += (xpos - oldX) * 0.01f;
-        phi += (ypos - oldY) * 0.01f;
+        theta += (xpos - mousePos.x) * 0.01f;
+        phi += (ypos - mousePos.y) * 0.01f;
     }
 
 
@@ -248,8 +301,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     if (phi < 0.01f) phi = 0.01f;
 
 
-    oldX = xpos;
-    oldY = ypos;
+    mousePos.x = xpos;
+    mousePos.y = ypos;
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
@@ -265,7 +318,24 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
+    SCR_HEIGHT = width;
+    SCR_HEIGHT = height;
+
     glViewport(0, 0, width, height);
+
+    textProjection = glm::ortho(0.0f, static_cast<GLfloat>(width), 0.0f,
+                                static_cast<GLfloat>(height));
+}
+
+void window_size_callback(GLFWwindow* window, int width, int height)
+{
+    SCR_HEIGHT = width;
+    SCR_HEIGHT = height;
+
+    glViewport(0, 0, width, height);
+
+    textProjection = glm::ortho(0.0f, static_cast<GLfloat>(width), 0.0f,
+                                static_cast<GLfloat>(height));
 }
 
 
@@ -275,5 +345,3 @@ int max_nr_of_vertex_attrs_supported()
     glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
     return nrAttributes;
 }
-
-

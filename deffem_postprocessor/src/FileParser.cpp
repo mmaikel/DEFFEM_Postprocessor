@@ -11,6 +11,8 @@ class FileParser
 {
 public:
 
+    struct ModelInfo {};
+
     static int readSections(const char* filename, vector<float>& verticesAndColors, vector<unsigned int>& indices, float &min, float &max)
     {
         ifstream file;
@@ -32,7 +34,7 @@ public:
             cout << "[ERROR]\tFailed to open file \"" << filename << "\"" << endl;
         }
 
-        // Read from result file's sections into vectors: `vertices`, `values`, `indices`
+        // Read from result file's sections into vectors: `vertices`, `valuesPositions`, `indices`
         while (file.is_open() && !file.eof() && getline(file, line))
         {
             if (checkSectionChanged(line, section))
@@ -40,7 +42,7 @@ public:
                 if (section == "*NODE") continue;
                 if (section == "*END") break;
             }
-            else if (section == "*NODE")
+            else if (section == "*NODE" || section.empty())
             {
                 processLine(line, vertices, values);
                 getMinMaxValue(line, minMax, initial);
@@ -114,25 +116,27 @@ private:
         string nodeNumber;
         auto idx = 0;
 
-        while (getline(ss, element, ','))
+        while (getline(ss, element, ' '))
         {
-            if (idx == 4)
-            {
-                const auto value = strtof(element.c_str(), nullptr);
-                if (initial)
+            if (!element.empty()) {
+                if (idx == 4)
                 {
-                    minMax.min = value;
-                    minMax.max = value;
-                    initial = false;
+                    const auto value = strtof(element.c_str(), nullptr);
+                    if (initial)
+                    {
+                        minMax.min = value;
+                        minMax.max = value;
+                        initial = false;
+                    }
+                    else
+                    {
+                        if (value < minMax.min) minMax.min = value;
+                        else if (value > minMax.max) minMax.max = value;
+                    }
                 }
-                else
-                {
-                    if (value < minMax.min) minMax.min = value;
-                    else if (value > minMax.max) minMax.max = value;
-                }
-            }
 
-            idx++;
+                idx++;
+            }
         }
     }
 
@@ -144,15 +148,26 @@ private:
         string nodeNumber;
         auto idx = 0;
 
-        getline(ss, nodeNumber, ',');
-
-        while (getline(ss, element, ','))
+        while (getline(ss, element, ' '))
         {
-            if (idx < 3)
-                vertices.push_back(strtof(element.c_str(), nullptr));
-            else
-                values.push_back(strtof(element.c_str(), nullptr));
-            idx++;
+            if(!element.empty())
+            {
+                nodeNumber = element;
+                break;
+            }
+        }
+        // cout << nodeNumber << endl;
+        // getline(ss, nodeNumber, ',');
+
+        while (getline(ss, element, ' '))
+        {
+            if (!element.empty()) {
+                if (idx < 3)
+                    vertices.push_back(strtof(element.c_str(), nullptr));
+                else
+                    values.push_back(strtof(element.c_str(), nullptr));
+                idx++;
+            }
         }
     }
 

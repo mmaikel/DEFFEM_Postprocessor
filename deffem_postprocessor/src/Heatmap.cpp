@@ -6,12 +6,15 @@
 #include "Typer.cpp"
 
 
-class Heatmap : Object
+class Heatmap
 {
 public:
 
     Heatmap(GLfloat x, GLfloat y, GLfloat width, GLfloat height, float min, float max)
     {
+        position = glm::vec3(x, y, 0.0f);
+        typer = new Typer();
+
         std::vector<float> vertices;
         std::vector<unsigned int> indices;
 
@@ -20,7 +23,7 @@ public:
         float valueGap = (max - min) / precision;
         float red, green, blue;
 
-        for (auto i = 0; i < precision*2; i++)
+        for (auto i = 0; i < precision * 2; i++)
         {
             auto val = (i * valueGap) + min;
             const float normalizedVal = (val - min) / (max - min);
@@ -45,7 +48,8 @@ public:
                 indices.push_back(i);
                 indices.push_back(i + 1);
                 indices.push_back(i + 3);
-            } else
+            }
+            else
             {
                 indices.push_back(i + 1);
                 indices.push_back(i + 2);
@@ -56,8 +60,9 @@ public:
             valPoints.push_back(y + (heightGap * i));
             valPoints.push_back(0.0f);
 
-            if (i <= 10) {
-                vals.push_front(glm::vec4(x + width + 5.0f, y + (heightGap * i), 0.0f, val));
+            if (i <= 10)
+            {
+                valuesPositions.push_front(glm::vec4(x + width + 5.0f, y + (heightGap * i), 0.0f, val));
             }
         }
 
@@ -65,10 +70,7 @@ public:
         attribsSizes.push_back(3);
         attribsSizes.push_back(3);
 
-        
-
-
-        this->heatmap = new deffem::CustomObject(vertices, indices, attribsSizes, 6);
+        heatmap = new deffem::CustomObject(vertices, indices, attribsSizes, 6);
     }
 
     void getHeatMapColor(float value, float* red, float* green, float* blue)
@@ -96,25 +98,24 @@ public:
         *blue = (color[idx2][2] - color[idx1][2]) * fractBetween + color[idx1][2];
     }
 
-
-    void draw() override
+    ~Heatmap()
     {
-        heatmap->draw();
+        delete heatmap;
+        delete typer;
     }
 
-    void draw(Shader shader) override
-    {
-        heatmap->draw();
-    }
 
-    void draw(Shader shader, Shader tShader) 
+    void draw(Shader* shader, Shader* tShader)
     {
+        typer->renderText(*tShader, "Temperature [C]", position.x, position.y - 25.0f, 0.3f,
+                         glm::vec3(1.0f, 1.0f, 1.0f));
         heatmap->draw(shader);
-        for(auto vec : vals)
+        for (auto pos : valuesPositions)
         {
-            deffem::Rectangle rec(vec.x, vec.y, vec.z, 15.0f, 1.0f, Color(1.0f, 1.0f, 1.0f));
+            deffem::Rectangle rec(pos.x, pos.y, pos.z, 15.0f, 1.0f, Color(1.0f, 1.0f, 1.0f));
             rec.draw(shader);
-            typer.renderText(tShader, std::to_string(static_cast<int>(vec.w)), vec.x + 25.0f, vec.y, 0.3f, glm::vec3(1.0f, 1.0f, 1.0f));
+            typer->renderText(*tShader, std::to_string(static_cast<int>(pos.w)), pos.x + 25.0f, pos.y, 0.3f,
+                             glm::vec3(1.0f, 1.0f, 1.0f));
         }
     }
 
@@ -123,12 +124,8 @@ public:
 
 protected:
 
+    glm::vec3 position;
     deffem::CustomObject* heatmap;
-
-    std::list<glm::vec4> vals;
-
-    Typer typer;
-
-
-    
+    std::list<glm::vec4> valuesPositions;
+    Typer* typer;
 };

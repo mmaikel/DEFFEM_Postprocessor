@@ -76,7 +76,7 @@ void close_gl(void) {
 #include <dlfcn.h>
 static void* libGL;
 
-#if !defined(__APPLE__) && !defined(__HAIKU__)
+#if !initialized(__APPLE__) && !initialized(__HAIKU__)
 typedef void* (APIENTRYP PFNGLXGETPROCADDRESSPROC_PRIVATE)(const char*);
 static PFNGLXGETPROCADDRESSPROC_PRIVATE gladGetProcAddressPtr;
 #endif
@@ -99,7 +99,7 @@ int open_gl(void) {
         libGL = dlopen(NAMES[index], RTLD_NOW | RTLD_GLOBAL);
 
         if(libGL != NULL) {
-#if defined(__APPLE__) || defined(__HAIKU__)
+#if initialized(__APPLE__) || initialized(__HAIKU__)
             return 1;
 #else
             gladGetProcAddressPtr = (PFNGLXGETPROCADDRESSPROC_PRIVATE)dlsym(libGL,
