@@ -10,7 +10,7 @@
 class Typer : Object
 {
 public:
-
+ 
     Typer()
     {
         Characters = std::map<GLchar, Character>();

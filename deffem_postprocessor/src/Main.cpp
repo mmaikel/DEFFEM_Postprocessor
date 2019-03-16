@@ -203,14 +203,13 @@ int main()
 
 void loadModel(char const* filename)
 {
-    float min, max;
     vector<float> vertices;
     vector<unsigned int> indices;
     vector<unsigned int> attribsSizes;
     attribsSizes.push_back(3);
     attribsSizes.push_back(3);
 
-    FileParser::readSections(filename, vertices, indices, min, max);
+    auto modelInfo = FileParser::readSections(filename, vertices, indices);
 
     modelOriginOffset.x = -vertices[0];
     modelOriginOffset.y = -vertices[1];
@@ -228,8 +227,15 @@ void loadModel(char const* filename)
         deffemModel = new deffem::CustomObject(vertices, indices, attribsSizes, 6);
     }
 
+    cout << "[INFO]\tFile \"" << filename << "\" was read successfully" << endl;
+    cout << "[INFO]\tNode count: " << modelInfo.nodeCount << endl;
+    cout << "[INFO]\tElement count: " << modelInfo.elementCount << endl;
+    cout << "[INFO]\tNumber of vector components: " << vertices.size() << endl;
+    cout << "[INFO]\tNumber of indices: " << indices.size() << endl;
+    cout << "[INFO]\tMinimum value: " << modelInfo.minMaxValue.min << endl;
+    cout << "[INFO]\tMaximum value: " << modelInfo.minMaxValue.max << endl;
 
-    heatmap = new Heatmap(25.0f, 500.0f, 50.0f, 200.0f, min, max);
+    heatmap = new Heatmap(25.0f, 500.0f, 50.0f, 200.0f, modelInfo);
 
     currentFilename = filename;
 }
@@ -262,7 +268,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         cameraTarget.x += 0.001;
     }
 
-    cout << cameraTarget.y << endl;
 }
 
 

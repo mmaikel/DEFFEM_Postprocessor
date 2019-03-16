@@ -4,19 +4,24 @@
 #include <list>
 #include "Rectangle.cpp"
 #include "Typer.cpp"
+#include "../headers/deffem.h"
 
 
 class Heatmap
 {
 public:
 
-    Heatmap(GLfloat x, GLfloat y, GLfloat width, GLfloat height, float min, float max)
+    Heatmap(GLfloat x, GLfloat y, GLfloat width, GLfloat height, ModelInfo modelInfo)
     {
         position = glm::vec3(x, y, 0.0f);
         typer = new Typer();
+        this->modelInfo = modelInfo;
 
         std::vector<float> vertices;
         std::vector<unsigned int> indices;
+
+        auto min = modelInfo.minMaxValue.min;
+        auto max = modelInfo.minMaxValue.max;
 
         int precision = 10;
         float heightGap = height / precision;
@@ -107,14 +112,22 @@ public:
 
     void draw(Shader* shader, Shader* tShader)
     {
-        typer->renderText(*tShader, "Temperature [C]", position.x, position.y - 25.0f, 0.3f,
+        typer->renderText(*tShader, "Node count:", position.x, position.y - 25.0f, 0.3f,
                          glm::vec3(1.0f, 1.0f, 1.0f));
+        typer->renderText(*tShader, std::to_string(modelInfo.nodeCount), position.x + 105.0, position.y - 25.0f, 0.3f,
+            glm::vec3(1.0f, 1.0f, 1.0f));
+        typer->renderText(*tShader, "Element count:", position.x, position.y - 50.0f, 0.3f,
+            glm::vec3(1.0f, 1.0f, 1.0f));
+        typer->renderText(*tShader, std::to_string(modelInfo.elementCount), position.x + 105.0, position.y - 50.0f, 0.3f,
+            glm::vec3(1.0f, 1.0f, 1.0f));
+       
+        
         heatmap->draw(shader);
         for (auto pos : valuesPositions)
         {
             deffem::Rectangle rec(pos.x, pos.y, pos.z, 15.0f, 1.0f, Color(1.0f, 1.0f, 1.0f));
             rec.draw(shader);
-            typer->renderText(*tShader, std::to_string(static_cast<int>(pos.w)), pos.x + 25.0f, pos.y, 0.3f,
+            typer->renderText(*tShader, std::to_string(pos.w), pos.x + 25.0f, pos.y, 0.3f,
                              glm::vec3(1.0f, 1.0f, 1.0f));
         }
     }
@@ -127,5 +140,6 @@ protected:
     glm::vec3 position;
     deffem::CustomObject* heatmap;
     std::list<glm::vec4> valuesPositions;
+    ModelInfo modelInfo;
     Typer* typer;
 };

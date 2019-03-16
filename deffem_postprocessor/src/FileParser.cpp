@@ -4,6 +4,8 @@
 #include <sstream>
 #include <vector>
 #include "enumerate.cpp"
+#include "../headers/deffem.h"
+
 
 using namespace std;
 
@@ -11,17 +13,17 @@ class FileParser
 {
 public:
 
-    struct ModelInfo {};
-
-    static int readSections(const char* filename, vector<float>& verticesAndColors, vector<unsigned int>& indices, float &min, float &max)
+    static ModelInfo readSections(const char* filename, vector<float>& verticesAndColors, vector<unsigned int>& indices)
     {
         ifstream file;
         string line;
         string section;
         vector<float> values;
         vector<float> vertices;
-        MinMaxValue minMax{};
+        MinMax minMax{};
         auto initial = true;
+        unsigned long lastNodeNumber = 0;
+        unsigned long lastElementNumber = 0;
 
         file.open(filename);
 
@@ -44,12 +46,12 @@ public:
             }
             else if (section == "*NODE" || section.empty())
             {
-                processLine(line, vertices, values);
+                lastNodeNumber = processLine(line, vertices, values);
                 getMinMaxValue(line, minMax, initial);
             }
             else if (section == "*ELEMENT_SOLID")
             {
-                processLine(line, indices);
+                lastElementNumber = processLine(line, indices);
             }
             else
             {
@@ -59,14 +61,14 @@ public:
                 throw std::runtime_error(ss.str());
             }
         }
-        
+
         // Compose a vector with following structure: x1, y1, z1, r1, g1, b1, x2, y2, z2, r2, g2, b2, ... 
         for (auto val : deffem::enumerate(values))
         {
             const float normalizedVal = (val.item - minMax.min) / (minMax.max - minMax.min);
             const unsigned int insertIdx = val.index * 3;
             float r, g, b;
-            
+
             getHeatMapColor(normalizedVal, &r, &g, &b);
 
             if (insertIdx < vertices.size())
@@ -81,11 +83,7 @@ public:
             verticesAndColors.push_back(b);
         }
 
-        cout << "[INFO]\tFile \"" << filename << "\" was read successfully" << endl;
-        cout << "[INFO]\tNumber of vertices: " << vertices.size() << endl;
-        cout << "[INFO]\tNumber of indices: " << indices.size() << endl;
-        cout << "[INFO]\tMinimum value: " << minMax.min << endl;
-        cout << "[INFO]\tMaximum value: " << minMax.max << endl;
+        const auto modelInfo = ModelInfo{lastNodeNumber, lastElementNumber, minMax };
 
 
         vertices.clear();
@@ -93,32 +91,24 @@ public:
         values.clear();
         values.shrink_to_fit();
 
-        min = minMax.min;
-        max = minMax.max;
-
         file.close();
-        return 0;
+
+        return modelInfo;
     }
 
 
 private:
 
-    struct MinMaxValue
-    {
-        float min;
-        float max;
-    };
-
-    static void getMinMaxValue(const string& line, MinMaxValue& minMax, bool& initial)
+    static void getMinMaxValue(const string& line, MinMax& minMax, bool& initial)
     {
         std::stringstream ss(line);
         string element;
-        string nodeNumber;
         auto idx = 0;
 
         while (getline(ss, element, ' '))
         {
-            if (!element.empty()) {
+            if (!element.empty())
+            {
                 if (idx == 4)
                 {
                     const auto value = strtof(element.c_str(), nullptr);
@@ -140,7 +130,7 @@ private:
         }
     }
 
-    static void processLine(const string& line, vector<float>& vertices, vector<float>& values)
+    static unsigned long processLine(const string& line, vector<float>& vertices, vector<float>& values)
     {
         // TODO: check in documentation if `line` is copied or referenced by {stringstream}
         std::stringstream ss(line);
@@ -150,18 +140,17 @@ private:
 
         while (getline(ss, element, ' '))
         {
-            if(!element.empty())
+            if (!element.empty())
             {
                 nodeNumber = element;
                 break;
             }
         }
-        // cout << nodeNumber << endl;
-        // getline(ss, nodeNumber, ',');
 
         while (getline(ss, element, ' '))
         {
-            if (!element.empty()) {
+            if (!element.empty())
+            {
                 if (idx < 3)
                     vertices.push_back(strtof(element.c_str(), nullptr));
                 else
@@ -169,9 +158,12 @@ private:
                 idx++;
             }
         }
+
+
+        return stoul(nodeNumber);
     }
 
-    static void processLine(const string& line, vector<unsigned int>& indices)
+    static unsigned long processLine(const string& line, vector<unsigned int>& indices)
     {
         std::stringstream ss(line);
         string element;
@@ -204,7 +196,7 @@ private:
         indices.push_back(indicesHelper[2]);
         indices.push_back(indicesHelper[3]);
 
-     
+
         indices.push_back(indicesHelper[1]);
         indices.push_back(indicesHelper[5]);
         indices.push_back(indicesHelper[6]);
@@ -239,6 +231,8 @@ private:
         indices.push_back(indicesHelper[4]);
         indices.push_back(indicesHelper[6]);
         indices.push_back(indicesHelper[7]);
+
+        return stoul(connectionNumber);
     }
 
     static bool checkSectionChanged(string test, string& section)
