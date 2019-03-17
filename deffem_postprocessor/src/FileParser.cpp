@@ -13,7 +13,7 @@ class FileParser
 {
 public:
 
-    static ModelInfo readSections(const char* filename, vector<float>& verticesAndColors, vector<unsigned int>& indices)
+    static ModelInfo readSections(string filename, vector<float>& verticesAndColors, vector<unsigned int>& indices)
     {
         ifstream file;
         string line;

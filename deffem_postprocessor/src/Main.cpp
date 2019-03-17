@@ -8,6 +8,9 @@
 #include <glm/glm/gtc/type_ptr.inl>
 #include "Heatmap.cpp"
 #include "MeshPlane.cpp"
+#include "ModelContext.cpp"
+#include <algorithm>
+
 
 // GLFW Callback functions definitions
 int max_nr_of_vertex_attrs_supported();
@@ -18,7 +21,7 @@ void rotateModel(Shader& shader);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
-void loadModel(char const* filename);
+ModelContext* loadModel(char const* filename);
 void file_drop_callback(GLFWwindow* window, int count, const char** paths);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
@@ -45,9 +48,11 @@ glm::vec3 modelOriginOffset;
 glm::mat4 textProjection;
 
 // Objects pointers
-deffem::CustomObject* deffemModel = NULL;
-Heatmap* heatmap = NULL;
+std::vector<ModelContext*> deffemModelContexts;
+Heatmap* heatmap = nullptr;
+Typer* typer = nullptr;
 
+int currentModelIndex;
 string currentFilename;
 
 
@@ -105,7 +110,7 @@ int main()
     glfwSetKeyCallback(window, key_callback);
 
     // Used to display text on the screen
-    Typer typer;
+    typer = new Typer();
 
     MeshPlane mesh(glm::vec3(0.0f, 0.0f, 0.0f), 1.0f, 1.0f, 60);
 
@@ -163,9 +168,13 @@ int main()
 
 
         // Draw DEFFEM model
-        if (deffemModel)
+        if (!deffemModelContexts.empty())
         {
-            deffemModel->draw(&modelShader);
+            auto currentModel = deffemModelContexts[currentModelIndex];
+            if (currentModel && currentModel->model)
+            {
+                currentModel->model->draw(&modelShader);
+            }
         }
 
         // Draw mesh    
@@ -178,12 +187,22 @@ int main()
             heatmap->draw(&heatmapShader, &textShader);
         }
 
-        // Display filename
-        if (!currentFilename.empty()) {
-            typer.renderText(textShader, "File: " + currentFilename, 10.0f, 10.0f, 0.3f, glm::vec3(0.85f, 0.85f, 0.85f));
-        } else
+        // Display model number and filename
+        if (!currentFilename.empty())
         {
-            typer.renderText(textShader, "Drag and drop a file here...", SCR_WIDTH/2 - 100.0, SCR_HEIGHT/2 - 5.0, 0.4f, glm::vec3(0.85f, 0.85f, 0.85f));
+            typer->renderText(
+                textShader,
+                "Model: " + std::to_string(currentModelIndex + 1) + " of " + std::to_string(deffemModelContexts.size()) +
+                " loaded", 10.0f, 30.0f, 0.3f,
+                glm::vec3(1.0f, 1.0f, 1.0f));
+
+            typer->renderText(textShader, "File: " + currentFilename, 10.0f, 10.0f, 0.3f,
+                              glm::vec3(0.85f, 0.85f, 0.85f));
+        }
+        else
+        {
+            typer->renderText(textShader, "Drag and drop a file here...", SCR_WIDTH / 2 - 100.0, SCR_HEIGHT / 2 - 5.0,
+                              0.4f, glm::vec3(0.85f, 0.85f, 0.85f));
         }
 
 
@@ -193,7 +212,7 @@ int main()
     }
 
     // De-allocate all resources once they've outlived their purpose:
-    delete deffemModel;
+    deffemModelContexts.clear();
     delete heatmap;
 
     glfwTerminate();
@@ -201,13 +220,15 @@ int main()
     return 0;
 }
 
-void loadModel(char const* filename)
+ModelContext* loadModel(const string filename)
 {
+    deffem::CustomObject* model = NULL;
+
     vector<float> vertices;
     vector<unsigned int> indices;
-    vector<unsigned int> attribsSizes;
-    attribsSizes.push_back(3);
-    attribsSizes.push_back(3);
+    vector<unsigned int> attributeSizes;
+    attributeSizes.push_back(3);
+    attributeSizes.push_back(3);
 
     auto modelInfo = FileParser::readSections(filename, vertices, indices);
 
@@ -215,16 +236,14 @@ void loadModel(char const* filename)
     modelOriginOffset.y = -vertices[1];
     modelOriginOffset.z = -vertices[2];
 
-    delete deffemModel;
-    delete heatmap;
 
     if (indices.empty())
     {
-        deffemModel = new deffem::CustomObject(vertices, attribsSizes, 6);
+        model = new deffem::CustomObject(vertices, attributeSizes, 6);
     }
     else
     {
-        deffemModel = new deffem::CustomObject(vertices, indices, attribsSizes, 6);
+        model = new deffem::CustomObject(vertices, indices, attributeSizes, 6);
     }
 
     cout << "[INFO]\tFile \"" << filename << "\" was read successfully" << endl;
@@ -235,9 +254,8 @@ void loadModel(char const* filename)
     cout << "[INFO]\tMinimum value: " << modelInfo.minMaxValue.min << endl;
     cout << "[INFO]\tMaximum value: " << modelInfo.minMaxValue.max << endl;
 
-    heatmap = new Heatmap(25.0f, 500.0f, 50.0f, 200.0f, modelInfo);
 
-    currentFilename = filename;
+    return new ModelContext(model, modelInfo, filename);
 }
 
 // Process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
@@ -247,6 +265,14 @@ void processInput(GLFWwindow* window)
         glfwSetWindowShouldClose(window, true);
 }
 
+void changeModel(int index)
+{
+    currentModelIndex = index;
+    delete heatmap;
+    heatmap = new Heatmap(25.0f, 500.0f, 50.0f, 200.0f, deffemModelContexts[index]->info, typer);
+
+    currentFilename = deffemModelContexts[index]->filename;
+}
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -267,13 +293,58 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     {
         cameraTarget.x += 0.001;
     }
-
+    else if (key == GLFW_KEY_LEFT_BRACKET && currentModelIndex > 0)
+    {
+        if (action == GLFW_PRESS)
+        {
+            changeModel(currentModelIndex - 1);
+        }
+        else if (action == GLFW_REPEAT)
+        {
+            changeModel(currentModelIndex - 1);
+        }
+    }
+    else if (key == GLFW_KEY_RIGHT_BRACKET && currentModelIndex < deffemModelContexts.size() - 1)
+    {
+        if (action == GLFW_PRESS)
+        {
+            changeModel(currentModelIndex + 1);
+        }
+        else if (action == GLFW_REPEAT)
+        {
+            changeModel(currentModelIndex + 1);
+        }
+    }
 }
 
 
 void file_drop_callback(GLFWwindow* window, int count, const char** paths)
 {
-    loadModel(paths[0]);
+    // Sort file paths
+    std::vector<std::string> v(paths, paths + count);
+    std::sort(v.begin(), v.end());
+
+    // Remove old models
+    if (!deffemModelContexts.empty())
+    {
+        for (auto ctx : deffemModelContexts)
+        {
+            delete ctx;
+        }
+
+        deffemModelContexts.clear();
+    }
+
+    // Load models from files
+    for (const auto& path : v)
+    {
+        auto model = loadModel(path);
+        deffemModelContexts.push_back(model);
+    }
+
+    currentModelIndex = 0;
+    heatmap = new Heatmap(25.0f, 500.0f, 50.0f, 200.0f, deffemModelContexts[0]->info, typer);
+    currentFilename = deffemModelContexts[0]->filename;
 }
 
 bool mousePressed = false;

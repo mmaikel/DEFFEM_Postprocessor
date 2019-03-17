@@ -131,6 +131,14 @@ public:
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
+    ~Typer()
+    {
+        Characters.clear();
+        glDeleteVertexArrays(1, &VAO);
+        glDeleteBuffers(1, &VBO);
+        glDeleteBuffers(1, &EBO);
+    }
+
 
     void draw() override
     {

@@ -1,5 +1,4 @@
 #include <vector>
-#include "CustomObject.cpp"
 #include <map>
 #include <list>
 #include "Rectangle.cpp"
@@ -11,10 +10,10 @@ class Heatmap
 {
 public:
 
-    Heatmap(GLfloat x, GLfloat y, GLfloat width, GLfloat height, ModelInfo modelInfo)
+    Heatmap(GLfloat x, GLfloat y, GLfloat width, GLfloat height, ModelInfo modelInfo, Typer* typer)
     {
         position = glm::vec3(x, y, 0.0f);
-        typer = new Typer();
+        this->typer = typer;
         this->modelInfo = modelInfo;
 
         std::vector<float> vertices;
@@ -106,7 +105,7 @@ public:
     ~Heatmap()
     {
         delete heatmap;
-        delete typer;
+        typer = nullptr;
     }
 
 
