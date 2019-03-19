@@ -1,4 +1,5 @@
 
+
 #include "../headers/Object.h"
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -7,7 +8,7 @@
 #include <map>
 
 
-class Typer : Object
+class Typer
 {
 public:
  
@@ -139,16 +140,6 @@ public:
         glDeleteBuffers(1, &EBO);
     }
 
-
-    void draw() override
-    {
-        
-    }
-
-    void draw(Shader *shader) override
-    {
-        
-    }
-
     std::map<GLchar, Character> Characters;
+    GLuint VAO{}, VBO{}, EBO = 0;
 };

@@ -22,6 +22,9 @@
     <Filter Include="Source Files\stage elements">
       <UniqueIdentifier>{2afeab96-16f6-4aae-8190-d768cec5405b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\utilities">
+      <UniqueIdentifier>{2c36ae55-1db6-41c9-9e93-4bf2539b0161}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\temperature 00001.k">
@@ -54,23 +57,8 @@
     <None Include="shaders\heatmap.fs">
       <Filter>Shader files</Filter>
     </None>
-    <None Include="shaders\axes.vs">
-      <Filter>Shader files</Filter>
-    </None>
-    <None Include="shaders\axes.fs">
-      <Filter>Shader files</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\enumerate.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\FileParser.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\glad.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -101,24 +89,27 @@
     <ClCompile Include="src\MeshPlane.cpp">
       <Filter>Source Files\stage elements</Filter>
     </ClCompile>
-    <ClCompile Include="src\Axes.cpp">
-      <Filter>Source Files\stage elements</Filter>
+    <ClCompile Include="src\enumerate.cpp">
+      <Filter>Source Files\utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FileParser.cpp">
+      <Filter>Source Files\utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="src\glad.c">
+      <Filter>Source Files\utilities</Filter>
     </ClCompile>
     <ClCompile Include="src\MinMax.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ModelInfo.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\utilities</Filter>
     </ClCompile>
     <ClCompile Include="src\ModelContext.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ModelInfo.cpp">
+      <Filter>Source Files\utilities</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="headers\Object.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="headers\resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="headers\Shader.h">
@@ -127,32 +118,9 @@
     <ClInclude Include="headers\Line.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="nanovg_gl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="headers\deffem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resource1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resource2.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resource3.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resource4.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="DEFFEM_Postprocessor.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="resources\post_icon.ico">

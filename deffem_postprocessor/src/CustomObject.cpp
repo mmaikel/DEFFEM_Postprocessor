@@ -9,7 +9,7 @@ namespace deffem
     public:
 
         CustomObject(std::vector<float> vertices, std::vector<unsigned int> indices,
-                     std::vector<unsigned int> attributes, int stride)
+                     std::vector<unsigned int> attributes, const int stride)
         {
             this->verticesSize = vertices.size();
             this->indicesSize = indices.size();
@@ -27,7 +27,7 @@ namespace deffem
                          GL_STATIC_DRAW);
 
 
-            int attrPtr = 0;
+            auto attrPtr = 0;
             for (auto i = 0; i < attributes.size(); i++)
             {
                 glVertexAttribPointer(i, attributes[i], GL_FLOAT, GL_FALSE, stride * sizeof(float),

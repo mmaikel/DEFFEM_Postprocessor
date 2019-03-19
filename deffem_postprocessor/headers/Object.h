@@ -2,15 +2,12 @@
 #define OBJECT_H
 
 #include "Shader.h"
-#include <list>
 #include <GL/gl.h>
-
 
 class Object
 {
 public:
-
-  
+    virtual ~Object() = default;
 
     virtual void draw() = 0;
 

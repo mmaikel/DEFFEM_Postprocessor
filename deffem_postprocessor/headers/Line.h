@@ -1,4 +1,7 @@
+#ifndef LINE_H
+#define  LINE_H
 #include "Object.h"
+
 
 namespace deffem {
     class Line : Object
@@ -10,3 +13,4 @@ namespace deffem {
         void draw(Shader* shader) override;
     };
 }
+#endif

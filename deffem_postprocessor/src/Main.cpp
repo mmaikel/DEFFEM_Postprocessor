@@ -33,16 +33,21 @@ float SCR_HEIGHT = 720;
 float fov = 25.0f;
 
 // Last position of the mouse cursor
-glm::vec2 mousePos;
+glm::vec2 mousePos(0.0f);
 
-double theta = 0.0f, phi = 3.14f / 2;
+// Projection translation
+double alpha = 0.0f, beta = 0.0f;
+
+// Camera position 
+double theta = 0.0f;
+double phi = 1.57f;
 double radius = 0.25f;
 
 // Point where the camera points to
 glm::vec3 cameraTarget = glm::vec3(0.0f, 0.033f, 0.0f);
 
 // Used to center the object on the stage
-glm::vec3 modelOriginOffset;
+glm::vec3 modelOriginOffset(0.0f);
 
 // Projections
 glm::mat4 textProjection;
@@ -63,7 +68,6 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
-
 
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -133,7 +137,6 @@ int main()
     while (!glfwWindowShouldClose(window))
     {
         processInput(window);
-
         // Render background color
         glClearColor(0.15f, 0.15f, 0.17f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -144,26 +147,32 @@ int main()
 
         auto projection = glm::perspective(glm::radians(fov), SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.0f);
         auto view = glm::mat4(1.0f);
-        glm::vec3 eye;
 
-        eye.x = cameraTarget.x + radius * sin(phi) * cos(theta);
-        eye.y = cameraTarget.y + radius * cos(phi);
-        eye.z = cameraTarget.z + radius * sin(phi) * sin(theta);
+        glm::vec3 eye = glm::vec3(cameraTarget.x + radius * sin(phi) * cos(theta),
+                                  cameraTarget.y + radius * cos(phi),
+                                  cameraTarget.z + radius * sin(phi) * sin(theta)
+        );
+
         view = glm::lookAt(glm::vec3(eye.x, eye.y, eye.z),
                            glm::vec3(cameraTarget.x, cameraTarget.y, cameraTarget.z),
                            glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 centered = glm::translate(glm::mat4(1.0f), modelOriginOffset);
+
+        glm::mat4 centeredModel = glm::translate(glm::mat4(1.0f), modelOriginOffset);
+        glm::mat4 translatedProjection = glm::translate(projection, glm::vec3(-alpha, beta, 0.0f));
+
 
         // Pass transformation matrices to the shader
-        modelShader.setMat4("model", centered);
-        modelShader.setMat4("projection", projection);
+        modelShader.setMat4("model", centeredModel);
+        modelShader.setMat4("projection", translatedProjection);
         modelShader.setMat4("view", view);
+
 
         // Mesh transformation
         meshShader.use();
 
+
         meshShader.setMat4("model", glm::mat4(1.0f));
-        meshShader.setMat4("projection", projection);
+        meshShader.setMat4("projection", translatedProjection);
         meshShader.setMat4("view", view);
 
 
@@ -192,7 +201,7 @@ int main()
         {
             typer->renderText(
                 textShader,
-                "Model: " + std::to_string(currentModelIndex + 1) + " of " + std::to_string(deffemModelContexts.size()) +
+                "Step: " + std::to_string(currentModelIndex + 1) + " of " + std::to_string(deffemModelContexts.size()) +
                 " loaded", 10.0f, 30.0f, 0.3f,
                 glm::vec3(1.0f, 1.0f, 1.0f));
 
@@ -201,7 +210,7 @@ int main()
         }
         else
         {
-            typer->renderText(textShader, "Drag and drop a file here...", SCR_WIDTH / 2 - 100.0, SCR_HEIGHT / 2 - 5.0,
+            typer->renderText(textShader, "Drag and drop files here...", SCR_WIDTH / 2 - 100.0, SCR_HEIGHT / 2 - 5.0,
                               0.4f, glm::vec3(0.85f, 0.85f, 0.85f));
         }
 
@@ -212,17 +221,22 @@ int main()
     }
 
     // De-allocate all resources once they've outlived their purpose:
+    for (auto model : deffemModelContexts)
+    {
+        delete model;
+    }
     deffemModelContexts.clear();
     delete heatmap;
+    delete typer;
 
     glfwTerminate();
 
     return 0;
 }
 
-ModelContext* loadModel(const string filename)
+ModelContext* loadModel(const string& filename)
 {
-    deffem::CustomObject* model = NULL;
+    deffem::CustomObject* model = nullptr;
 
     vector<float> vertices;
     vector<unsigned int> indices;
@@ -230,7 +244,7 @@ ModelContext* loadModel(const string filename)
     attributeSizes.push_back(3);
     attributeSizes.push_back(3);
 
-    auto modelInfo = FileParser::readSections(filename, vertices, indices);
+    const auto modelInfo = FileParser::readSections(filename, vertices, indices);
 
     modelOriginOffset.x = -vertices[0];
     modelOriginOffset.y = -vertices[1];
@@ -258,67 +272,7 @@ ModelContext* loadModel(const string filename)
     return new ModelContext(model, modelInfo, filename);
 }
 
-// Process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-void processInput(GLFWwindow* window)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-}
-
-void changeModel(int index)
-{
-    currentModelIndex = index;
-    delete heatmap;
-    heatmap = new Heatmap(25.0f, 500.0f, 50.0f, 200.0f, deffemModelContexts[index]->info, typer);
-
-    currentFilename = deffemModelContexts[index]->filename;
-}
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    // Target camera up/down and left/right on the x axis
-    if (key == GLFW_KEY_UP)
-    {
-        cameraTarget.y += 0.001;
-    }
-    else if (key == GLFW_KEY_DOWN)
-    {
-        cameraTarget.y -= 0.001;
-    }
-    else if (key == GLFW_KEY_LEFT)
-    {
-        cameraTarget.x -= 0.001;
-    }
-    else if (key == GLFW_KEY_RIGHT)
-    {
-        cameraTarget.x += 0.001;
-    }
-    else if (key == GLFW_KEY_LEFT_BRACKET && currentModelIndex > 0)
-    {
-        if (action == GLFW_PRESS)
-        {
-            changeModel(currentModelIndex - 1);
-        }
-        else if (action == GLFW_REPEAT)
-        {
-            changeModel(currentModelIndex - 1);
-        }
-    }
-    else if (key == GLFW_KEY_RIGHT_BRACKET && currentModelIndex < deffemModelContexts.size() - 1)
-    {
-        if (action == GLFW_PRESS)
-        {
-            changeModel(currentModelIndex + 1);
-        }
-        else if (action == GLFW_REPEAT)
-        {
-            changeModel(currentModelIndex + 1);
-        }
-    }
-}
-
-
-void file_drop_callback(GLFWwindow* window, int count, const char** paths)
+void file_drop_callback(GLFWwindow* window, const int count, const char** paths)
 {
     // Sort file paths
     std::vector<std::string> v(paths, paths + count);
@@ -347,35 +301,97 @@ void file_drop_callback(GLFWwindow* window, int count, const char** paths)
     currentFilename = deffemModelContexts[0]->filename;
 }
 
+// Process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+void processInput(GLFWwindow* window)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+}
+
+void changeModel(int index)
+{
+    currentModelIndex = index;
+    delete heatmap;
+    heatmap = new Heatmap(25.0f, 500.0f, 50.0f, 200.0f, deffemModelContexts[index]->info, typer);
+
+    currentFilename = deffemModelContexts[index]->filename;
+}
+
 bool mousePressed = false;
+bool mouseWithControlPressed = false;
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    // Target camera up/down and left/right on the x axis
+    if (key == GLFW_KEY_LEFT && currentModelIndex > 0)
+    {
+        if (action == GLFW_PRESS)
+        {
+            changeModel(currentModelIndex - 1);
+        }
+        else if (action == GLFW_REPEAT)
+        {
+            changeModel(currentModelIndex - 1);
+        }
+    }
+    else if (key == GLFW_KEY_RIGHT && currentModelIndex < deffemModelContexts.size() - 1)
+    {
+        if (action == GLFW_PRESS)
+        {
+            changeModel(currentModelIndex + 1);
+        }
+        else if (action == GLFW_REPEAT)
+        {
+            changeModel(currentModelIndex + 1);
+        }
+    }
+}
+
+
+
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_1)
     {
-        if (action == GLFW_PRESS)
+        if (mods == GLFW_MOD_CONTROL)
+        {
+            if (action == GLFW_PRESS)
+            {
+                mouseWithControlPressed = true;
+            }
+            else if (action == GLFW_RELEASE)
+            {
+                mouseWithControlPressed = false;
+            }
+        }
+        else if (action == GLFW_PRESS)
         {
             mousePressed = true;
         }
         else if (action == GLFW_RELEASE)
         {
             mousePressed = false;
+            mouseWithControlPressed = false;
         }
     }
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    if (mousePressed)
+    if (mouseWithControlPressed)
+    {
+        alpha += (xpos - mousePos.x) * 0.0005f;
+        beta += (ypos - mousePos.y) * 0.0005f;
+    }
+    else if (mousePressed)
     {
         theta += (xpos - mousePos.x) * 0.01f;
         phi += (ypos - mousePos.y) * 0.01f;
+
+        if (phi > 3.139f) phi = 3.139f;
+        if (phi < 0.01f) phi = 0.01f;
     }
-
-
-    if (phi > 3.139f) phi = 3.139f;
-    if (phi < 0.01f) phi = 0.01f;
-
 
     mousePos.x = xpos;
     mousePos.y = ypos;

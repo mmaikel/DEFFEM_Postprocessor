@@ -1,5 +1,6 @@
 #include <glad/glad.h>
 
+
 class Color
 {
 public:

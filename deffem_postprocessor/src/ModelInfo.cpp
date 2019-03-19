@@ -5,5 +5,5 @@ class ModelInfo
 public:
     unsigned long nodeCount;
     unsigned long elementCount;
-    MinMax minMaxValue{};
+    MinMax minMaxValue;
 };

@@ -5,6 +5,8 @@
 #include <vector>
 #include "enumerate.cpp"
 #include "../headers/deffem.h"
+#include <list>
+#include <algorithm>
 
 
 using namespace std;
@@ -13,15 +15,14 @@ class FileParser
 {
 public:
 
-    static ModelInfo readSections(string filename, vector<float>& verticesAndColors, vector<unsigned int>& indices)
+
+    static ModelInfo readSections(const const string& filename, vector<float>& verticesAndColors, vector<unsigned int>& indices)
     {
         ifstream file;
-        string line;
-        string section;
-        vector<float> values;
+        string currentLine;
+        string currentSection;
+        list<float> values;
         vector<float> vertices;
-        MinMax minMax{};
-        auto initial = true;
         unsigned long lastNodeNumber = 0;
         unsigned long lastElementNumber = 0;
 
@@ -37,35 +38,41 @@ public:
         }
 
         // Read from result file's sections into vectors: `vertices`, `valuesPositions`, `indices`
-        while (file.is_open() && !file.eof() && getline(file, line))
+        while (file.is_open() && !file.eof() && getline(file, currentLine))
         {
-            if (checkSectionChanged(line, section))
+            if (checkSectionChanged(currentLine, currentSection))
             {
-                if (section == "*NODE") continue;
-                if (section == "*END") break;
+                if (currentSection == "*NODE") continue;
+                if (currentSection == "*END") break;
             }
-            else if (section == "*NODE" || section.empty())
+            else if (currentSection.empty())
             {
-                lastNodeNumber = processLine(line, vertices, values);
-                getMinMaxValue(line, minMax, initial);
+                lastNodeNumber = processLine(currentLine, vertices, values, ' ');
             }
-            else if (section == "*ELEMENT_SOLID")
+            else if (currentSection == "*NODE")
             {
-                lastElementNumber = processLine(line, indices);
+                lastNodeNumber = processLine(currentLine, vertices, values);
+            }
+            else if (currentSection == "*ELEMENT_SOLID")
+            {
+                lastElementNumber = processLine(currentLine, indices);
             }
             else
             {
                 std::stringstream ss;
-                ss << "ERROR::FileParser::ReadSections\nUnknown section " << section <<
+                ss << "ERROR::FileParser::ReadSections\nUnknown section " << currentSection <<
                     " found in results file " << filename << endl;
                 throw std::runtime_error(ss.str());
             }
         }
 
+        const float maxValue = *max_element(std::begin(values), std::end(values));
+        const float minValue = *min_element(std::begin(values), std::end(values));
+
         // Compose a vector with following structure: x1, y1, z1, r1, g1, b1, x2, y2, z2, r2, g2, b2, ... 
         for (auto val : deffem::enumerate(values))
         {
-            const float normalizedVal = (val.item - minMax.min) / (minMax.max - minMax.min);
+            const float normalizedVal = (val.item - minValue) / (maxValue - minValue);
             const unsigned int insertIdx = val.index * 3;
             float r, g, b;
 
@@ -83,14 +90,12 @@ public:
             verticesAndColors.push_back(b);
         }
 
-        const auto modelInfo = ModelInfo{lastNodeNumber, lastElementNumber, minMax };
-
+        const auto modelInfo = ModelInfo{lastNodeNumber, lastElementNumber, MinMax(minValue, maxValue) };
+        
 
         vertices.clear();
         vertices.shrink_to_fit();
         values.clear();
-        values.shrink_to_fit();
-
         file.close();
 
         return modelInfo;
@@ -99,46 +104,14 @@ public:
 
 private:
 
-    static void getMinMaxValue(const string& line, MinMax& minMax, bool& initial)
+    static unsigned long processLine(const string& line, vector<float>& vertices, list<float>& values, const char separator = ',')
     {
-        std::stringstream ss(line);
-        string element;
-        auto idx = 0;
-
-        while (getline(ss, element, ' '))
-        {
-            if (!element.empty())
-            {
-                if (idx == 4)
-                {
-                    const auto value = strtof(element.c_str(), nullptr);
-                    if (initial)
-                    {
-                        minMax.min = value;
-                        minMax.max = value;
-                        initial = false;
-                    }
-                    else
-                    {
-                        if (value < minMax.min) minMax.min = value;
-                        else if (value > minMax.max) minMax.max = value;
-                    }
-                }
-
-                idx++;
-            }
-        }
-    }
-
-    static unsigned long processLine(const string& line, vector<float>& vertices, vector<float>& values)
-    {
-        // TODO: check in documentation if `line` is copied or referenced by {stringstream}
         std::stringstream ss(line);
         string element;
         string nodeNumber;
         auto idx = 0;
 
-        while (getline(ss, element, ' '))
+        while (getline(ss, element, separator))
         {
             if (!element.empty())
             {
@@ -147,7 +120,7 @@ private:
             }
         }
 
-        while (getline(ss, element, ' '))
+        while (getline(ss, element, separator))
         {
             if (!element.empty())
             {
@@ -163,24 +136,26 @@ private:
         return stoul(nodeNumber);
     }
 
-    static unsigned long processLine(const string& line, vector<unsigned int>& indices)
+    static unsigned long processLine(const string& line, vector<unsigned int>& indices, const char separator = ',')
     {
         std::stringstream ss(line);
         string element;
         string connectionNumber;
         string sectionId;
 
-        getline(ss, connectionNumber, ',');
-        getline(ss, sectionId, ',');
+        getline(ss, connectionNumber, separator);
+        getline(ss, sectionId, separator);
 
-        float indicesHelper[8];
+        float _indices[8];
         int idx = 0;
 
-
-        while (idx < 8 && getline(ss, element, ','))
+        while (idx < 8 && getline(ss, element, separator))
         {
-            indicesHelper[idx] = stoi(element) - 1;
-            idx++;
+            if (!element.empty())
+            {
+                _indices[idx] = stoi(element) - 1;
+                idx++;
+            }         
         }
 
         if (idx > 8)
@@ -188,49 +163,48 @@ private:
             cout << "[ERROR]\tWrong input file format: There must be 8 node numbers in every row";
         }
 
-        // TODO: Create convenient method for this:
-        indices.push_back(indicesHelper[0]);
-        indices.push_back(indicesHelper[1]);
-        indices.push_back(indicesHelper[2]);
-        indices.push_back(indicesHelper[0]);
-        indices.push_back(indicesHelper[2]);
-        indices.push_back(indicesHelper[3]);
+        // Builds cube with triangles
+        indices.push_back(_indices[0]);
+        indices.push_back(_indices[1]);
+        indices.push_back(_indices[2]);
+        indices.push_back(_indices[0]);
+        indices.push_back(_indices[2]);
+        indices.push_back(_indices[3]);
 
+        indices.push_back(_indices[1]);
+        indices.push_back(_indices[5]);
+        indices.push_back(_indices[6]);
+        indices.push_back(_indices[1]);
+        indices.push_back(_indices[6]);
+        indices.push_back(_indices[2]);
 
-        indices.push_back(indicesHelper[1]);
-        indices.push_back(indicesHelper[5]);
-        indices.push_back(indicesHelper[6]);
-        indices.push_back(indicesHelper[1]);
-        indices.push_back(indicesHelper[6]);
-        indices.push_back(indicesHelper[2]);
+        indices.push_back(_indices[2]);
+        indices.push_back(_indices[6]);
+        indices.push_back(_indices[7]);
+        indices.push_back(_indices[2]);
+        indices.push_back(_indices[7]);
+        indices.push_back(_indices[3]);
 
-        indices.push_back(indicesHelper[2]);
-        indices.push_back(indicesHelper[6]);
-        indices.push_back(indicesHelper[7]);
-        indices.push_back(indicesHelper[2]);
-        indices.push_back(indicesHelper[7]);
-        indices.push_back(indicesHelper[3]);
+        indices.push_back(_indices[0]);
+        indices.push_back(_indices[4]);
+        indices.push_back(_indices[7]);
+        indices.push_back(_indices[0]);
+        indices.push_back(_indices[7]);
+        indices.push_back(_indices[3]);
 
-        indices.push_back(indicesHelper[0]);
-        indices.push_back(indicesHelper[4]);
-        indices.push_back(indicesHelper[7]);
-        indices.push_back(indicesHelper[0]);
-        indices.push_back(indicesHelper[7]);
-        indices.push_back(indicesHelper[3]);
+        indices.push_back(_indices[1]);
+        indices.push_back(_indices[5]);
+        indices.push_back(_indices[4]);
+        indices.push_back(_indices[1]);
+        indices.push_back(_indices[4]);
+        indices.push_back(_indices[0]);
 
-        indices.push_back(indicesHelper[1]);
-        indices.push_back(indicesHelper[5]);
-        indices.push_back(indicesHelper[4]);
-        indices.push_back(indicesHelper[1]);
-        indices.push_back(indicesHelper[4]);
-        indices.push_back(indicesHelper[0]);
-
-        indices.push_back(indicesHelper[4]);
-        indices.push_back(indicesHelper[5]);
-        indices.push_back(indicesHelper[6]);
-        indices.push_back(indicesHelper[4]);
-        indices.push_back(indicesHelper[6]);
-        indices.push_back(indicesHelper[7]);
+        indices.push_back(_indices[4]);
+        indices.push_back(_indices[5]);
+        indices.push_back(_indices[6]);
+        indices.push_back(_indices[4]);
+        indices.push_back(_indices[6]);
+        indices.push_back(_indices[7]);
 
         return stoul(connectionNumber);
     }

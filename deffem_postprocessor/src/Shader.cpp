@@ -1,6 +1,7 @@
 #include "../headers/Shader.h"
 #include <glm/glm/gtc/type_ptr.inl>
 
+
 Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 {
     // 1. retrieve the vertex/fragment source code from filePath
@@ -12,6 +13,8 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
     // ensure ifstream objects can throw exceptions:
     vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+    std::cout << "[INFO] Using shaders:\n" << vertexPath << "\n" << fragmentPath << "\n\n";
     
     try
     {
@@ -34,7 +37,7 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
     }
     catch (std::ifstream::failure e)
     {
-        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ" << std::endl;
+        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ\n" << e.what() << std::endl;
     }
 
     const char* vShaderCode = vertexCode.c_str();
@@ -64,7 +67,7 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
     if (!success)
     {
         glGetShaderInfoLog(fragment, 512, nullptr, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
+        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
     };
 
     ID = glCreateProgram();
