@@ -1,17 +1,17 @@
 #include <vector>
 #include <map>
 #include <list>
-#include "Rectangle.cpp"
 #include "Typer.cpp"
 #include "../headers/deffem.h"
-
+#include "../headers/Rectangle.h"
 
 class Heatmap
 {
 public:
 
-    Heatmap(GLfloat x, GLfloat y, GLfloat width, GLfloat height, ModelInfo modelInfo, Typer* typer)
+    Heatmap(GLfloat x, GLfloat y, GLfloat width, GLfloat height, ModelInfo modelInfo, Typer* typer, glm::vec3 textColor)
     {
+        this->textColor = textColor;
         position = glm::vec3(x, y, 0.0f);
         this->typer = typer;
         this->modelInfo = modelInfo;
@@ -112,22 +112,23 @@ public:
     void draw(Shader* shader, Shader* tShader)
     {
         typer->renderText(*tShader, "Node count:", position.x, position.y - 25.0f, 0.3f,
-                         glm::vec3(1.0f, 1.0f, 1.0f));
+                          textColor);
         typer->renderText(*tShader, std::to_string(modelInfo.nodeCount), position.x + 105.0, position.y - 25.0f, 0.3f,
-            glm::vec3(1.0f, 1.0f, 1.0f));
+                          textColor);
         typer->renderText(*tShader, "Element count:", position.x, position.y - 50.0f, 0.3f,
-            glm::vec3(1.0f, 1.0f, 1.0f));
-        typer->renderText(*tShader, std::to_string(modelInfo.elementCount), position.x + 105.0, position.y - 50.0f, 0.3f,
-            glm::vec3(1.0f, 1.0f, 1.0f));
-       
-        
+                          textColor);
+        typer->renderText(*tShader, std::to_string(modelInfo.elementCount), position.x + 105.0, position.y - 50.0f,
+                          0.3f,
+                          textColor);
+
+
         heatmap->draw(shader);
         for (auto pos : valuesPositions)
         {
-            deffem::Rectangle rec(pos.x, pos.y, pos.z, 15.0f, 1.0f, Color(1.0f, 1.0f, 1.0f));
+            deffem::Rectangle rec(pos.x, pos.y, pos.z, 15.0f, 1.0f, Color(textColor.x, textColor.y, textColor.z));
             rec.draw(shader);
             typer->renderText(*tShader, std::to_string(pos.w), pos.x + 25.0f, pos.y, 0.3f,
-                             glm::vec3(1.0f, 1.0f, 1.0f));
+                              textColor);
         }
     }
 
@@ -141,4 +142,5 @@ protected:
     std::list<glm::vec4> valuesPositions;
     ModelInfo modelInfo;
     Typer* typer;
+    glm::vec3 textColor;
 };

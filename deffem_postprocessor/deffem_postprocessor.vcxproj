@@ -134,10 +134,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="resources\application.conf" />
     <None Include="resources\temperature 00001.k" />
     <None Include="resources\temperature 00807.k" />
     <None Include="resources\test.k" />
     <None Include="resources\vel_x000.k" />
+    <None Include="shaders\control.fs" />
+    <None Include="shaders\control.vs" />
     <None Include="shaders\heatmap.fs" />
     <None Include="shaders\heatmap.vs" />
     <None Include="shaders\shader.fs" />
@@ -146,6 +149,7 @@
     <None Include="shaders\text.vs" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Button.cpp" />
     <ClCompile Include="src\Character.cpp" />
     <ClCompile Include="src\Color.cpp" />
     <ClCompile Include="src\CustomObject.cpp" />
@@ -164,10 +168,14 @@
     <ClCompile Include="src\Typer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="headers\Button.h" />
+    <ClInclude Include="headers\Color.h" />
     <ClInclude Include="headers\deffem.h" />
     <ClInclude Include="headers\Line.h" />
     <ClInclude Include="headers\Object.h" />
+    <ClInclude Include="headers\Rectangle.h" />
     <ClInclude Include="headers\Shader.h" />
+    <ClInclude Include="headers\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="resources\post_icon.ico" />

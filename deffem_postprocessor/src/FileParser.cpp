@@ -7,6 +7,9 @@
 #include "../headers/deffem.h"
 #include <list>
 #include <algorithm>
+#include <math.h>
+#include <iterator>
+#include <map>
 
 
 using namespace std;
@@ -16,7 +19,8 @@ class FileParser
 public:
 
 
-    static ModelInfo readSections(const const string& filename, vector<float>& verticesAndColors, vector<unsigned int>& indices)
+    static ModelInfo readSections(const const string& filename, vector<float>& verticesAndColors,
+                                  vector<unsigned int>& indices)
     {
         ifstream file;
         string currentLine;
@@ -90,8 +94,8 @@ public:
             verticesAndColors.push_back(b);
         }
 
-        const auto modelInfo = ModelInfo{lastNodeNumber, lastElementNumber, MinMax(minValue, maxValue) };
-        
+        const auto modelInfo = ModelInfo{lastNodeNumber, lastElementNumber, MinMax(minValue, maxValue)};
+
 
         vertices.clear();
         vertices.shrink_to_fit();
@@ -101,15 +105,56 @@ public:
         return modelInfo;
     }
 
+    static std::map<string, string> readConfig(string filename)
+    {
+        ifstream file;
+        auto map = std::map<string, string>();
+
+        file.open(filename);
+
+        if (file.is_open())
+        {
+            cout << "[INFO]\tReading from file \"" << filename << "\"" << endl;
+        }
+        else
+        {
+            cout << "[ERROR]\tFailed to open file \"" << filename << "\"" << endl;
+        }
+
+
+        std::string line;
+        while (std::getline(file, line))
+        {
+            std::stringstream ss(line);
+            std::string key;
+            if (std::getline(ss, key, '='))
+            {
+                std::string value;
+                if (std::getline(ss, value))
+                {
+                    cout << key << " = " << value << endl;
+                    map.insert(std::pair<string, string>(key, value));
+                }
+                    
+            }
+        }
+
+        return map;
+    }
+
 
 private:
 
-    static unsigned long processLine(const string& line, vector<float>& vertices, list<float>& values, const char separator = ',')
+    static unsigned long processLine(const string& line, vector<float>& vertices, list<float>& values,
+                                     const char separator = ',')
     {
         std::stringstream ss(line);
         string element;
         string nodeNumber;
         auto idx = 0;
+
+        vector<float> value;
+
 
         while (getline(ss, element, separator))
         {
@@ -127,9 +172,24 @@ private:
                 if (idx < 3)
                     vertices.push_back(strtof(element.c_str(), nullptr));
                 else
-                    values.push_back(strtof(element.c_str(), nullptr));
+                    value.push_back(strtof(element.c_str(), nullptr));
                 idx++;
             }
+        }
+
+        if (value.size() == 1)
+        {
+            values.push_back(value.back());
+        }
+        else if (value.size() == 3)
+        {
+            auto x = value[0];
+            auto y = value[1];
+            auto z = value[2];
+
+            auto mag = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
+
+            values.push_back(mag);
         }
 
 
@@ -155,7 +215,7 @@ private:
             {
                 _indices[idx] = stoi(element) - 1;
                 idx++;
-            }         
+            }
         }
 
         if (idx > 8)
