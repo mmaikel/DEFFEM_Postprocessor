@@ -27,18 +27,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="resources\temperature 00001.k">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="resources\temperature 00807.k">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="resources\test.k">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="resources\vel_x000.k">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="shaders\shader.fs">
       <Filter>Shader files</Filter>
     </None>
@@ -86,9 +74,6 @@
     <ClCompile Include="src\Typer.cpp">
       <Filter>Source Files\api</Filter>
     </ClCompile>
-    <ClCompile Include="src\Character.cpp">
-      <Filter>Source Files\api</Filter>
-    </ClCompile>
     <ClCompile Include="src\Line.cpp">
       <Filter>Source Files\api</Filter>
     </ClCompile>
@@ -107,17 +92,23 @@
     <ClCompile Include="src\glad.c">
       <Filter>Source Files\utilities</Filter>
     </ClCompile>
-    <ClCompile Include="src\MinMax.cpp">
-      <Filter>Source Files\utilities</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ModelContext.cpp">
-      <Filter>Source Files\utilities</Filter>
-    </ClCompile>
-    <ClCompile Include="src\ModelInfo.cpp">
-      <Filter>Source Files\utilities</Filter>
-    </ClCompile>
     <ClCompile Include="src\Button.cpp">
       <Filter>Source Files\api</Filter>
+    </ClCompile>
+    <ClCompile Include="src\State.cpp">
+      <Filter>Source Files\utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Camera.cpp">
+      <Filter>Source Files\utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MouseState.cpp">
+      <Filter>Source Files\utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ApplicationSettings.cpp">
+      <Filter>Source Files\utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="src\AnimationState.cpp">
+      <Filter>Source Files\utilities</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -128,9 +119,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="headers\Line.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="headers\deffem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="headers\stb_image.h">
@@ -145,10 +133,47 @@
     <ClInclude Include="headers\Color.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="resources\post_icon.ico">
-      <Filter>Resource Files</Filter>
-    </Image>
+    <ClInclude Include="headers\ApplicationSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\Heatmap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\Letter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\Typer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\ModelInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\MinMax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\CustomObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\MeshPlane.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\FileParser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\ModelContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\State.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\AnimationState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\MouseState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,74 +1,41 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include "FileParser.cpp"
+#include "../headers/FileParser.h"
 #include "../headers/Shader.h"
 #include <glm/glm/glm.hpp>
 #include <glm/glm/gtc/matrix_transform.hpp>
 #include <glm/glm/gtc/type_ptr.inl>
-#include "Heatmap.cpp"
-#include "MeshPlane.cpp"
-#include "ModelContext.cpp"
+#include "../headers/Heatmap.h"
+#include "../headers/MeshPlane.h"
 #include "../headers/Button.h"
 #include <algorithm>
 #include <chrono>
-#include "../headers/stb_image.h"
-
+#include "../headers/ApplicationSettings.h"
+#include "../headers/ModelContext.h"
+#include "../headers/State.h"
 
 using namespace std::chrono;
+using namespace std;
+using namespace deffem;
+using namespace glm;
 
 
 // GLFW Callback functions definitions
-int max_nr_of_vertex_attrs_supported();
-// void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void window_size_callback(GLFWwindow* window, int width, int height);
+int maxNrOfVertexAttrsSupported();
+void windowSizeCallback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 void rotateModel(Shader& shader);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+void mouseCallback(GLFWwindow* window, double xpos, double ypos);
+void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+void fileDropCallback(GLFWwindow* window, int count, const char** paths);
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 ModelContext* loadModel(char const* filename);
-void file_drop_callback(GLFWwindow* window, int count, const char** paths);
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void buttonsListener(fvec2 mousePos);
 
-bool nextModel();
-bool previousModel();
-
-
-// Settings
-float SCR_WIDTH;
-float SCR_HEIGHT;
-
-// Field of view
-float fov = 25.0f;
-
-// Last position of the mouse cursor
-glm::vec2 mousePos(0.0f);
-
-// Projection translation
-double alpha = 0.0f, beta = 0.0f;
-
-// Camera position 
-double theta = 0.0f;
-double phi = 1.57f;
-double radius = 0.25f;
-
-// Point where the camera points to
-glm::vec3 cameraTarget = glm::vec3(0.0f, 0.033f, 0.0f);
-
-// Used to center the object on the stage
-glm::vec3 modelOriginOffset(0.0f);
-
-// Projections
-glm::mat4 textProjection;
-
-// Objects pointers
-std::vector<ModelContext*> deffemModelContexts;
-Heatmap* heatmap = nullptr;
-Typer* typer = nullptr;
-
-int currentModelIndex;
-string currentFilename;
+vec3 modelOriginOffset(0.0f);
+mat4 textProjection;
 
 Button* playButton = nullptr;
 Button* scaleUpButton = nullptr;
@@ -76,16 +43,11 @@ Button* scaleDownButton = nullptr;
 Button* lastStepButton = nullptr;
 Button* firstStepButton = nullptr;
 
+Typer* typer = nullptr;
 
-bool playAnimation = false;
 
-auto modelScale = 0.1f;
-
-auto pointSize = 2.0f;
-
-bool lightTheme = true;
-
-glm::vec3 textColor;
+ApplicationSettings settings;
+State* state = nullptr;
 
 
 int main()
@@ -102,19 +64,13 @@ int main()
 
 
     auto conf = FileParser::readConfig("./resources/application.conf");
+    settings = ApplicationSettings(conf);
+    state = new State(&settings);
 
-    modelScale = stof(conf["model_scale"]);
-    std::stringstream ss(conf["resolution"]);
-
-    string w, h;
-    std::getline(ss, w, 'x');
-    std::getline(ss, h);
-
-    SCR_WIDTH = stof(w);
-    SCR_HEIGHT = stof(h);
 
     // Window initialization
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "DEFFEM Postprocessing", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(settings.screenResolution.x, settings.screenResolution.y,
+                                          "DEFFEM Postprocessing", nullptr, nullptr);
     if (window == nullptr)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -130,8 +86,7 @@ int main()
     }
 
 
-    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
-
+    glViewport(0, 0, settings.screenResolution.x, settings.screenResolution.y);
 
     // Set OpenGL options
     glEnable(GL_DEPTH_TEST);
@@ -139,42 +94,28 @@ int main()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_TRUE);
     glEnable(GL_LINE_SMOOTH);
-    glLineWidth(0.5);
-    glPointSize(pointSize);
+    glLineWidth(settings.lineWidth);
+    glPointSize(settings.pointSize);
     // glEnable(GL_CULL_FACE);
 
     // Set callbacks
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
-    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, mouseCallback);
+    glfwSetScrollCallback(window, scrollCallback);
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    glfwSetWindowSizeCallback(window, window_size_callback);
-    glfwSetDropCallback(window, file_drop_callback);
-    glfwSetKeyCallback(window, key_callback);
+    glfwSetWindowSizeCallback(window, windowSizeCallback);
+    glfwSetDropCallback(window, fileDropCallback);
+    glfwSetKeyCallback(window, keyCallback);
 
-    auto bgColor = Color::fromString(conf["bg-color"]);
-    lightTheme = (0.3 * bgColor.red + 0.59 * bgColor.green + 0.11 * bgColor.blue) >= 0.5;
-    glm::vec3 meshColor;
-
-    if(lightTheme)
-    {
-        textColor = glm::vec3(0.0, 0.0, 0.0);
-        meshColor = glm::vec3(0.8, 0.8, 0.8);
-    } else
-    {
-        textColor = glm::vec3(1.0, 1.0, 1.0);
-        meshColor = glm::vec3(0.1, 0.1, 0.1);
-    }
-
-    // Used to display text on the screen
     typer = new Typer();
 
-    int gap = 60;
-    if (conf["show_mesh"] == "false")
+    auto meshGap = 60;
+    if (!settings.showMeshPlane)
     {
-        gap = 0;
+        meshGap = 0;
     }
-    MeshPlane mesh(glm::vec3(0.0f, 0.0f, 0.0f), 1.0f, 1.0f, gap, meshColor);
+
+    MeshPlane mesh(vec3(0.0f, 0.0f, 0.0f), fvec2(1.0f, 1.0f), meshGap, settings.meshPlaneColor);
 
     // Compile and setup the shaders
     Shader textShader("./shaders/text.vs", "./shaders/text.fs");
@@ -184,9 +125,8 @@ int main()
     Shader buttonShader("./shaders/control.vs", "./shaders/control.fs");
 
 
-    textProjection = glm::ortho(0.0f, static_cast<GLfloat>(SCR_WIDTH), 0.0f,
-                                static_cast<GLfloat>(SCR_HEIGHT));
-
+    textProjection = ortho(0.0f, static_cast<GLfloat>(settings.screenResolution.x), 0.0f,
+                           static_cast<GLfloat>(settings.screenResolution.y));
 
     textShader.use();
     textShader.setMat4("projection", textProjection);
@@ -195,25 +135,39 @@ int main()
     heatmapShader.setMat4("projection", textProjection);
 
 
-    firstStepButton = new Button(glm::vec2(SCR_WIDTH - 120, SCR_HEIGHT - 40), glm::vec2(30), "./resources/button.jpg");
-    firstStepButton->setViewport(SCR_WIDTH, SCR_HEIGHT);
+    firstStepButton = new Button(fvec2(settings.screenResolution.x - 120,
+                                       settings.screenResolution.y - 40),
+                                 fvec2(30),
+                                 "./resources/previous_ctrl.jpg");
 
-    playButton = new Button(glm::vec2(SCR_WIDTH - 80, SCR_HEIGHT - 40), glm::vec2(30), "./resources/button.jpg");
-    playButton->setViewport(SCR_WIDTH, SCR_HEIGHT);
+    playButton = new Button(vec2(settings.screenResolution.x - 80,
+                                 settings.screenResolution.y - 40),
+                            vec2(30), "./resources/play_ctrl.jpg");
 
-    lastStepButton = new Button(glm::vec2(SCR_WIDTH - 40, SCR_HEIGHT - 40), glm::vec2(30), "./resources/button.jpg");
-    lastStepButton->setViewport(SCR_WIDTH, SCR_HEIGHT);
+    lastStepButton = new Button(vec2(settings.screenResolution.x - 40,
+                                     settings.screenResolution.y - 40),
+                                vec2(30), "./resources/next_ctrl.jpg");
 
-    scaleUpButton = new Button(glm::vec2(SCR_WIDTH - 40, SCR_HEIGHT - 80), glm::vec2(30), "./resources/button.jpg");
-    scaleUpButton->setViewport(SCR_WIDTH, SCR_HEIGHT);
+    scaleUpButton = new Button(vec2(settings.screenResolution.x - 40,
+                                    settings.screenResolution.y - 80),
+                               vec2(30),
+                               "./resources/scale_point_up.jpg");
 
-    scaleDownButton = new Button(glm::vec2(SCR_WIDTH - 80, SCR_HEIGHT - 80), glm::vec2(30), "./resources/button.jpg");
-    scaleDownButton->setViewport(SCR_WIDTH, SCR_HEIGHT);
+    scaleDownButton = new Button(vec2(settings.screenResolution.x - 80,
+                                      settings.screenResolution.y - 80),
+                                 vec2(30),
+                                 "./resources/scale_point_down.jpg");
+
+    firstStepButton->setViewport(settings.screenResolution);
+    playButton->setViewport(settings.screenResolution);
+    lastStepButton->setViewport(settings.screenResolution);
+    scaleUpButton->setViewport(settings.screenResolution);
+    scaleDownButton->setViewport(settings.screenResolution);
 
 
-    const milliseconds animationTick(50);
+    const milliseconds animationTick(settings.animationTickMillis);
 
-    milliseconds nextAnimationDeadline = duration_cast<milliseconds>(
+    auto nextAnimationDeadline = duration_cast<milliseconds>(
         system_clock::now().time_since_epoch()
     ) + animationTick;
 
@@ -223,44 +177,34 @@ int main()
     {
         processInput(window);
         // Render background color
-        // glClearColor(0.15f, 0.15f, 0.17f, 1.0f);
-        glClearColor(bgColor.red, bgColor.green, bgColor.blue, 1.0f);
+        glClearColor(settings.backgroundColor.red, settings.backgroundColor.green, settings.backgroundColor.blue, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-        if (playAnimation)
-        {
-            auto currentTimeMillis = duration_cast<milliseconds>(
-                system_clock::now().time_since_epoch()
-            );
+        state->animationTick();
 
-            if (currentTimeMillis >= nextAnimationDeadline)
-            {
-                playAnimation = nextModel();
-                nextAnimationDeadline = currentTimeMillis + animationTick;
-            }
-        }
+        if (!state->animation.play)
+            playButton->changeTexture("./resources/play_ctrl.jpg");
 
 
         // DEFFEM Model transformation
         modelShader.use();
 
-        auto projection = glm::perspective(glm::radians(fov), SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.0f);
-        auto view = glm::mat4(1.0f);
+        const auto camera = state->camera;
+        auto projection = perspective(radians(camera.fov), state->screenSize.x / state->screenSize.y, 0.1f, 100.0f);
 
-        glm::vec3 eye = glm::vec3(cameraTarget.x + radius * sin(phi) * cos(theta),
-                                  cameraTarget.y + radius * cos(phi),
-                                  cameraTarget.z + radius * sin(phi) * sin(theta)
+        const auto eye = vec3(camera.target.x + camera.radius * sin(camera.phi) * cos(camera.theta),
+                              camera.target.y + camera.radius * cos(camera.phi),
+                              camera.target.z + camera.radius * sin(camera.phi) * sin(camera.theta)
         );
 
-        view = glm::lookAt(glm::vec3(eye.x, eye.y, eye.z),
-                           glm::vec3(cameraTarget.x, cameraTarget.y, cameraTarget.z),
-                           glm::vec3(0.0f, 1.0f, 0.0f));
+        const auto view = lookAt(fvec3(eye.x, eye.y, eye.z),
+                                 fvec3(camera.target.x, camera.target.y, camera.target.z),
+                                 fvec3(0.0f, 1.0f, 0.0f));
 
-        glm::mat4 scaledModel = glm::scale(glm::mat4(1.0f), glm::vec3(modelScale));
-        glm::mat4 centeredModel = glm::translate(scaledModel, modelOriginOffset);
-
-        glm::mat4 translatedProjection = glm::translate(projection, glm::vec3(-alpha, beta, 0.0f));
+        auto scaledModel = scale(fmat4(1.0f), fvec3(state->modelScale));
+        const auto centeredModel = translate(scaledModel, modelOriginOffset);
+        const auto translatedProjection = translate(projection, fvec3(camera.offset.x, -camera.offset.y, 0.0f));
 
 
         // Pass transformation matrices to the shader
@@ -271,62 +215,40 @@ int main()
 
         // Mesh transformation
         meshShader.use();
-
-
-        meshShader.setMat4("model", glm::mat4(1.0f));
+        meshShader.setMat4("model", mat4(1.0f));
         meshShader.setMat4("projection", translatedProjection);
         meshShader.setMat4("view", view);
 
 
         // Draw DEFFEM model
-        if (!deffemModelContexts.empty())
+        const auto deffemModelCtx = state->currentModelContext();
+        if (deffemModelCtx)
         {
-            auto currentModel = deffemModelContexts[currentModelIndex];
-            if (currentModel && currentModel->model)
-            {
-                currentModel->model->draw(&modelShader);
-            }
+            deffemModelCtx->model->draw(&modelShader);
         }
+
 
         // Draw mesh    
         mesh.draw(&meshShader);
 
 
         // Draw heatmap
-        if (heatmap)
+        if (state->heatmap)
         {
-            heatmap->draw(&heatmapShader, &textShader);
+            state->heatmap->draw(&heatmapShader, &textShader, typer);
         }
 
+
+        // Draw buttons
         firstStepButton->draw(&buttonShader);
         playButton->draw(&buttonShader);
         lastStepButton->draw(&buttonShader);
-
         scaleUpButton->draw(&buttonShader);
         scaleDownButton->draw(&buttonShader);
 
 
-        // Display model number and filename
-        if (!currentFilename.empty())
-        {
-
-            typer->renderText(textShader, "Scale: " + std::to_string(modelScale), 10.0f, 60.0f, 0.3f,
-                textColor);
-
-            typer->renderText(
-                textShader,
-                "Step: " + std::to_string(currentModelIndex + 1) + " of " + std::to_string(deffemModelContexts.size()) +
-                " loaded", 10.0f, 30.0f, 0.3f,
-                textColor);
-
-            typer->renderText(textShader, "File: " + currentFilename, 10.0f, 10.0f, 0.3f,
-                textColor);
-        }
-        else
-        {
-            typer->renderText(textShader, "Drag and drop files here...", SCR_WIDTH / 2 - 100.0, SCR_HEIGHT / 2 - 5.0,
-                              0.4f, textColor);
-        }
+        // Display state info 
+        state->displayStateInfoText(&textShader, typer);
 
 
         // Check and call events and swap the buffers
@@ -335,14 +257,6 @@ int main()
     }
 
     // De-allocate all resources once they've outlived their purpose:
-    for (auto model : deffemModelContexts)
-    {
-        delete model;
-    }
-    deffemModelContexts.clear();
-    delete heatmap;
-    delete typer;
-
     glfwTerminate();
 
     return 0;
@@ -350,7 +264,7 @@ int main()
 
 ModelContext* loadModel(const string& filename)
 {
-    deffem::CustomObject* model = nullptr;
+    CustomObject* model = nullptr;
 
     vector<float> vertices;
     vector<unsigned int> indices;
@@ -367,11 +281,11 @@ ModelContext* loadModel(const string& filename)
 
     if (indices.empty())
     {
-        model = new deffem::CustomObject(vertices, attributeSizes, 6);
+        model = new CustomObject(vertices, attributeSizes, 6);
     }
     else
     {
-        model = new deffem::CustomObject(vertices, indices, attributeSizes, 6);
+        model = new CustomObject(vertices, indices, attributeSizes, 6);
     }
 
     cout << "[INFO]\tFile \"" << filename << "\" was read successfully" << endl;
@@ -386,73 +300,46 @@ ModelContext* loadModel(const string& filename)
     return new ModelContext(model, modelInfo, filename);
 }
 
-void file_drop_callback(GLFWwindow* window, const int count, const char** paths)
+void fileDropCallback(GLFWwindow* window, const int count, const char** paths)
 {
-    // Sort file paths
     std::vector<std::string> v(paths, paths + count);
     std::sort(v.begin(), v.end());
 
-    // Remove old models
-    if (!deffemModelContexts.empty())
-    {
-        for (auto ctx : deffemModelContexts)
-        {
-            delete ctx;
-        }
+    state->clearModels();
 
-        deffemModelContexts.clear();
-    }
-
-    // Load models from files
     for (const auto& path : v)
     {
         auto model = loadModel(path);
-        deffemModelContexts.push_back(model);
+        state->deffemModelContexts.push_back(model);
     }
 
-    currentModelIndex = 0;
-    heatmap = new Heatmap(25.0f, SCR_HEIGHT / 2, 50.0f, 200.0f, deffemModelContexts[0]->info, typer, textColor);
-    currentFilename = deffemModelContexts[0]->filename;
+    state->refresh();
 }
 
-// Process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }
 
-void changeModel(int index)
-{
-    currentModelIndex = index;
-    delete heatmap;
-    heatmap = new Heatmap(25.0f, SCR_HEIGHT / 2, 50.0f, 200.0f, deffemModelContexts[index]->info, typer, textColor);
 
-    currentFilename = deffemModelContexts[index]->filename;
-}
-
-bool mousePressed = false;
-bool mouseWithControlPressed = false;
-bool mouseWithShiftPressed = false;
-
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     // Target camera up/down and left/right on the x axis
     if (key == GLFW_KEY_LEFT)
     {
         if (action == GLFW_PRESS || action == GLFW_REPEAT)
         {
-            playAnimation = false;
-            previousModel();
+            state->animation.stop();
+            state->previousModel();
         }
     }
-    else if (key == GLFW_KEY_RIGHT && currentModelIndex < deffemModelContexts.size() - 1)
+    else if (key == GLFW_KEY_RIGHT)
     {
         if (action == GLFW_PRESS || action == GLFW_REPEAT)
         {
-            playAnimation = false;
-            nextModel();
+            state->animation.stop();
+            state->nextModel();
         }
     }
     else if (key == GLFW_KEY_SPACE)
@@ -460,179 +347,172 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         if (action == GLFW_PRESS || action == GLFW_REPEAT)
         {
             cout << "[EVENT] Play/Stop animation" << endl;
-            if (currentModelIndex == deffemModelContexts.size() - 1)
+            if (state->animation.isFinished)
             {
-                changeModel(0);
-                playAnimation = true;
-            } else
+                state->restartAnimation();
+            }
+            else
             {
-                playAnimation = !playAnimation;
+                state->animation.play = !state->animation.play;
+            }
+
+
+            if (state->animation.play)
+            {
+                playButton->changeTexture("./resources/stop_ctrl.jpg");
+            }
+            else
+            {
+                playButton->changeTexture("./resources/play_ctrl.jpg");
             }
         }
     }
 }
 
-bool nextModel()
-{
-    if (!deffemModelContexts.empty() && currentModelIndex < deffemModelContexts.size() - 1)
-    {
-        changeModel(currentModelIndex + 1);
 
-        return true;
-    }
-    return false;
-}
-
-bool previousModel()
-{
-    if (currentModelIndex > 0)
-    {
-        changeModel(currentModelIndex - 1);
-
-        return true;
-    }
-
-    return false;
-}
-
-
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_1)
     {
-        if (mods == GLFW_MOD_CONTROL && !mousePressed && !mouseWithShiftPressed)
+        if (action == GLFW_PRESS)
         {
-            if (action == GLFW_PRESS)
+            if (mods == GLFW_MOD_CONTROL)
             {
-                mouseWithControlPressed = true;
+                state->mouse.pressedWith(GLFW_MOD_CONTROL);
             }
-            else if (action == GLFW_RELEASE)
+            else if (mods == GLFW_MOD_SHIFT)
             {
-                mouseWithControlPressed = false;
+                state->mouse.pressedWith(GLFW_MOD_SHIFT);
             }
-        }
-        else if (mods == GLFW_MOD_SHIFT && !mousePressed && !mouseWithControlPressed)
-        {
-            if (action == GLFW_PRESS)
+            else
             {
-                mouseWithShiftPressed = true;
-            }
-            else if (action == GLFW_RELEASE)
-            {
-                mouseWithShiftPressed = false;
-            }
-        }
-        else if (action == GLFW_PRESS)
-        {
-            mousePressed = true;
-
-            if (playButton->isClicked(glm::vec2(mousePos.x, SCR_HEIGHT - mousePos.y)))
-            {
-                cout << "[EVENT] Play animation" << endl;
-                playAnimation = !playAnimation;
-            }
-
-            else if (firstStepButton->isClicked(glm::vec2(mousePos.x, SCR_HEIGHT - mousePos.y)))
-            {
-                cout << "[EVENT] First step" << endl;
-                currentModelIndex = 0;
-            }
-
-            else if (lastStepButton->isClicked(glm::vec2(mousePos.x, SCR_HEIGHT - mousePos.y)))
-            {
-                cout << "[EVENT] Last step" << endl;
-                currentModelIndex = deffemModelContexts.size() - 1;
-            }
-
-            else if (scaleUpButton->isClicked(glm::vec2(mousePos.x, SCR_HEIGHT - mousePos.y)))
-            {
-                glPointSize(pointSize += 1.0);
-                cout << "[EVENT] Point size: " << pointSize << endl;
-            }
-
-            else if (scaleDownButton->isClicked(glm::vec2(mousePos.x, SCR_HEIGHT - mousePos.y)))
-            {
-                if (pointSize > 1)
-                {
-                    glPointSize(pointSize -= 1.0);
-                }
-                cout << "[EVENT] Point size: " << pointSize << endl;
+                state->mouse.pressed();
+                const auto mousePos = state->mouse.position;
+                buttonsListener(fvec2(mousePos.x, state->screenSize.y - mousePos.y));
             }
         }
         else if (action == GLFW_RELEASE)
         {
-            mousePressed = false;
-            mouseWithControlPressed = false;
-            mouseWithShiftPressed = false;
+            state->mouse.released();
         }
     }
 }
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+void buttonsListener(const fvec2 mousePos)
 {
-    if (mouseWithControlPressed)
+    if (playButton->isClicked(mousePos))
     {
-        alpha += (xpos - mousePos.x) * 0.0005f;
-        beta += (ypos - mousePos.y) * 0.0005f;
+        cout << "[EVENT] Play animation" << endl;
+        if (state->animation.isFinished)
+        {
+            state->restartAnimation();
+        }
+        else
+        {
+            state->animation.play = !state->animation.play;
+        }
+
+        if (state->animation.play)
+        {
+            playButton->changeTexture("./resources/stop_ctrl.jpg");
+        }
+        else
+        {
+            playButton->changeTexture("./resources/play_ctrl.jpg");
+        }
     }
-    else if (mouseWithShiftPressed)
+    else if (firstStepButton->isClicked(mousePos))
+    {
+        cout << "[EVENT] First step" << endl;
+        state->currentModelIndex = 0;
+    }
+    else if (lastStepButton->isClicked(mousePos))
+    {
+        cout << "[EVENT] Last step" << endl;
+        state->currentModelIndex = state->deffemModelContexts.size() - 1;
+    }
+    else if (scaleUpButton->isClicked(mousePos))
+    {
+        glPointSize(settings.pointSize += 1.0);
+        cout << "[EVENT] Point size: " << settings.pointSize << endl;
+    }
+    else if (scaleDownButton->isClicked(mousePos))
+    {
+        if (settings.pointSize > 1)
+        {
+            glPointSize(settings.pointSize -= 1.0);
+        }
+        cout << "[EVENT] Point size: " << settings.pointSize << endl;
+    }
+}
+
+void mouseCallback(GLFWwindow* window, double xpos, double ypos)
+{
+    const auto camera = state->camera;
+    const auto mousePos = state->mouse.position;
+
+    if (state->mouse.isPressedWithControl)
+    {
+        state->camera.offset.x += (xpos - mousePos.x) * 0.0002f;
+        state->camera.offset.y += (ypos - mousePos.y) * 0.0002f;
+    }
+    else if (state->mouse.isPressedWithShift)
     {
         auto sy = (ypos - mousePos.y) * 0.0005f;
-
-        modelScale -= sy;
+        state->modelScale -= sy;
     }
-    else if (mousePressed)
+    else if (state->mouse.isPressed)
     {
-        theta += (xpos - mousePos.x) * 0.01f;
-        phi += (ypos - mousePos.y) * 0.01f;
+        state->camera.theta += (xpos - mousePos.x) * 0.01f;
+        state->camera.phi += (ypos - mousePos.y) * 0.01f;
 
-        if (phi > 3.139f) phi = 3.139f;
-        if (phi < 0.01f) phi = 0.01f;
+        if (camera.phi > 3.139f) state->camera.phi = 3.139f;
+        if (camera.phi < 0.01f) state->camera.phi = 0.01f;
     }
 
-    mousePos.x = xpos;
-    mousePos.y = ypos;
+    state->mouse.position.x = xpos;
+    state->mouse.position.y = ypos;
 }
 
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    if (fov >= 1.0f && fov <= 45.0f)
-        fov -= yoffset;
-    if (fov <= 1.0f)
-        fov = 1.0f;
-    if (fov >= 45.0f)
-        fov = 45.0f;
+    if (state->camera.fov >= 1.0f && state->camera.fov <= 45.0f)
+        state->camera.fov -= yoffset;
+    if (state->camera.fov <= 1.0f)
+        state->camera.fov = 1.0f;
+    if (state->camera.fov >= 45.0f)
+        state->camera.fov = 45.0f;
 }
 
 
-void window_size_callback(GLFWwindow* window, int width, int height)
+void windowSizeCallback(GLFWwindow* window, int width, int height)
 {
-    SCR_HEIGHT = width;
-    SCR_HEIGHT = height;
+    const auto screenSize = fvec2(width, height);
+    state->screenSize = screenSize;
 
     glViewport(0, 0, width, height);
 
-    textProjection = glm::ortho(0.0f, static_cast<GLfloat>(width), 0.0f,
-                                static_cast<GLfloat>(height));
+    textProjection = ortho(0.0f, static_cast<GLfloat>(width), 0.0f,
+                           static_cast<GLfloat>(height));
 
 
-    firstStepButton->setViewport(width, height);
-    playButton->setViewport(width, height);
-    lastStepButton->setViewport(width, height);
+    firstStepButton->setViewport(screenSize);
+    playButton->setViewport(screenSize);
+    lastStepButton->setViewport(screenSize);
 
-    scaleUpButton->setViewport(width, height);
-    scaleDownButton->setViewport(width, height);
+    scaleUpButton->setViewport(screenSize);
+    scaleDownButton->setViewport(screenSize);
 
-    firstStepButton->setPosition(glm::vec2(width - 120.0, height - 40.0));
-    playButton->setPosition(glm::vec2(width - 80.0, height - 40.0));
-    lastStepButton->setPosition(glm::vec2(width - 40.0, height - 40.0));
+    firstStepButton->setPosition(vec2(width - 120.0, height - 40.0));
+    playButton->setPosition(vec2(width - 80.0, height - 40.0));
+    lastStepButton->setPosition(vec2(width - 40.0, height - 40.0));
 
-    scaleUpButton->setPosition(glm::vec2(width - 80.0, height - 80.0));
-    scaleDownButton->setPosition(glm::vec2(width - 40.0, height - 80.0));
+    scaleUpButton->setPosition(vec2(width - 80.0, height - 80.0));
+    scaleDownButton->setPosition(vec2(width - 40.0, height - 80.0));
 }
 
 
-int max_nr_of_vertex_attrs_supported()
+int maxNrOfVertexAttrsSupported()
 {
     int nrAttributes;
     glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);

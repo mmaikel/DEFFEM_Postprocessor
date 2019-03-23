@@ -1,11 +1,11 @@
 #include "../headers/Line.h"
 
 
-deffem::Line::Line(glm::vec3 p1, glm::vec3 p2, glm::vec3 color)
+deffem::Line::Line(glm::vec3 p1, glm::vec3 p2, Color color)
 {
     GLfloat vertices[] = {
-        p1.x, p1.y, p1.z, color.x, color.y, color.z,
-        p2.x, p2.y, p2.z, color.x, color.y, color.z
+        p1.x, p1.y, p1.z, color.red, color.green, color.blue,
+        p2.x, p2.y, p2.z, color.red, color.green, color.blue
     };
 
 

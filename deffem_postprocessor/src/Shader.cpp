@@ -1,6 +1,7 @@
 #include "../headers/Shader.h"
 #include <glm/glm/gtc/type_ptr.inl>
 
+using namespace deffem;
 
 Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 {

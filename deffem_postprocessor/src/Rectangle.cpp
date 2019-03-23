@@ -5,10 +5,10 @@ deffem::Rectangle::Rectangle(GLfloat x, GLfloat y, GLfloat z, GLfloat width, GLf
 {
 
     GLfloat vertices[] = {
-        x, y, z, 0.0f, 0.0f,
-        x + width, y, z, 1.0f, 0.0f,
-        x + width, y + height, z, 1.0f, 1.0f,
-        x, y + height, z, 0.0f, 1.0f
+        x, y, z, 0.0f, 1.0f,
+        x + width, y, z, 1.0f, 1.0f,
+        x + width, y + height, z, 1.0f, 0.0f,
+        x, y + height, z, 0.0f, 0.0f
     };
 
     GLint indices[] = {0, 1, 2, 0, 2, 3};

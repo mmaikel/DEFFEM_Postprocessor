@@ -4,18 +4,20 @@
 #include "Shader.h"
 #include <GL/gl.h>
 
-class Object
+namespace deffem
 {
-public:
-    virtual ~Object() = default;
+    class Object
+    {
+    public:
+        virtual ~Object() = default;
 
-    virtual void draw() = 0;
+        virtual void draw() = 0;
 
-    virtual void draw(Shader *shader) = 0;
+        virtual void draw(Shader* shader) = 0;
 
-protected:
+    protected:
 
-    GLuint VAO, VBO, EBO = 0;
-};
-
+        GLuint VAO, VBO, EBO = 0;
+    };
+}
 #endif
