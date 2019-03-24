@@ -22,6 +22,8 @@ namespace deffem
 
         void renderText(Shader* s, std::string text, glm::fvec2 pos, GLfloat size, Color color);
 
+        void bindTexture(char text);
+
     private:
 
         std::map<char, Letter> letters;

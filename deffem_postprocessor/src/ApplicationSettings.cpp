@@ -11,11 +11,12 @@ ApplicationSettings::ApplicationSettings()
     this->backgroundColor = Color(1.0, 1.0, 1.0);
     this->themeVariant = ThemeVariant::light;
     this->showMeshPlane = true;
-    this->initialModelScale = 1.0;
+    this->modelScale = 1.0;
     this->animationTickMillis = 50;
     this->lineWidth = 1;
     this->pointSize = 1;
-    this->heatmapSize = glm::fvec2(50.0, 200.0);
+    this->heatmapSize = fvec2(50.0, 200.0);
+    this->modelIntersection = fvec3(1.0f, 1.0f, 1.0f);
 }
 
 
@@ -33,13 +34,16 @@ ApplicationSettings::ApplicationSettings(std::map<std::string, std::string> conf
     this->backgroundColor = backgroundColor;
     this->themeVariant = ThemeVariant::determine(backgroundColor);
     this->showMeshPlane = config["show-mesh"] == "true";
-    this->initialModelScale = stof(config["model-scale"]);
+    this->modelScale = stof(config["model-scale"]);
     this->animationTickMillis = stol(config["animation-tick-millis"]);
     this->lineWidth = stoi(config["line-width"]);
     this->pointSize = stoi(config["point-size"]);
     this->textColor = textColorFn();
     this->meshPlaneColor = meshPlaneColorFn();
-    this->heatmapSize = glm::fvec2(stof(config["heatmap-width"]), stof(config["heatmap-height"]));
+    this->heatmapSize = fvec2(stof(config["heatmap-width"]), stof(config["heatmap-height"]));
+    this->modelIntersection = fvec3(stof(config["model-intersect-x"]),
+                                    stof(config["model-intersect-y"]),
+                                    stof(config["model-intersect-z"]));
 }
 
 void ApplicationSettings::resetAll()
@@ -50,11 +54,12 @@ void ApplicationSettings::resetAll()
         this->backgroundColor = Color(1.0, 1.0, 1.0);
         this->themeVariant = ThemeVariant::light;
         this->showMeshPlane = true;
-        this->initialModelScale = 1.0;
+        this->modelScale = 1.0;
         this->animationTickMillis = 50;
         this->lineWidth = 1;
         this->pointSize = 1;
-        this->heatmapSize = glm::fvec2(50.0, 200.0);
+        this->heatmapSize = fvec2(50.0, 200.0);
+        this->modelIntersection = fvec3(1.0f, 1.0f, 1.0f);
     }
     else
     {
@@ -70,12 +75,15 @@ void ApplicationSettings::resetAll()
         this->backgroundColor = backgroundColor;
         this->themeVariant = ThemeVariant::determine(backgroundColor);
         this->showMeshPlane = config["show-mesh"] == "true";
-        this->initialModelScale = stof(config["model-scale"]);
+        this->modelScale = stof(config["model-scale"]);
         this->animationTickMillis = stol(config["animation-tick-millis"]);
         this->lineWidth = stoi(config["line-width"]);
         this->pointSize = stoi(config["point-size"]);
         this->textColor = textColorFn();
         this->meshPlaneColor = meshPlaneColorFn();
-        this->heatmapSize = glm::fvec2(stof(config["heatmap-width"]), stof(config["heatmap-height"]));
+        this->heatmapSize = fvec2(stof(config["heatmap-width"]), stof(config["heatmap-height"]));
+        this->modelIntersection = fvec3(stof(config["model-intersect-x"]),
+                                        stof(config["model-intersect-y"]),
+                                        stof(config["model-intersect-z"]));
     }
 }

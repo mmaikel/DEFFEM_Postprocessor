@@ -29,6 +29,8 @@ namespace deffem
 
         void setFloat(const std::string& name, float value) const;
 
+        void setVec3(const GLchar* name, glm::vec3 value) const;
+
         void setMat4(const GLchar* name, glm::mat4 value) const;
     };
 }

@@ -14,6 +14,7 @@
 #include "../headers/ApplicationSettings.h"
 #include "../headers/ModelContext.h"
 #include "../headers/State.h"
+#include "../headers/Rectangle.h"
 
 using namespace std::chrono;
 using namespace std;
@@ -47,7 +48,10 @@ Button* increaseAnimationSpeedButton = nullptr;
 
 
 Typer* typer = nullptr;
-Shader* globalTextShader;
+Shader* globalTextShader = nullptr;
+Shader* modelShader = nullptr;
+Shader* sphShader = nullptr;
+Shader* mesShader = nullptr;
 
 
 ApplicationSettings settings;
@@ -100,7 +104,7 @@ int main()
     glEnable(GL_LINE_SMOOTH);
     glLineWidth(settings.lineWidth);
     glPointSize(settings.pointSize);
-    // glEnable(GL_CULL_FACE);
+    glDisable(GL_CULL_FACE);
 
     // Set callbacks
     glfwSetCursorPosCallback(window, mouseCallback);
@@ -118,11 +122,14 @@ int main()
 
     // Compile and setup the shaders
     Shader textShader("./shaders/text.vs", "./shaders/text.fs");
-    Shader modelShader("./shaders/shader.vs", "./shaders/shader.fs");
     Shader meshShader("./shaders/shader.vs", "./shaders/shader.fs");
     Shader heatmapShader("./shaders/heatmap.vs", "./shaders/heatmap.fs");
     Shader buttonShader("./shaders/control.vs", "./shaders/control.fs");
     globalTextShader = new Shader("./shaders/text.vs", "./shaders/text.fs");
+    Shader rectShader("./shaders/axis_label.vs", "./shaders/axis_label.fs");
+
+    sphShader = new Shader("./shaders/model_sph.vs", "./shaders/shader.fs");
+    mesShader = new Shader("./shaders/model_mes.vs", "./shaders/shader.fs");
 
 
     textShader.use();
@@ -185,6 +192,15 @@ int main()
     increaseAnimationSpeedButton->setProjection(&state->HUDprojection);
 
 
+    auto axisLabelX = deffem::Rectangle(0.0f, 0.0f, 0.0f, 0.0025f, 0.0025f);
+    auto axisLabelY = deffem::Rectangle(0.0f, 0.0f, 0.0f, 0.0025f, 0.0025f);
+    auto axisLabelZ = deffem::Rectangle(0.0f, 0.0f, 0.0f, 0.0025f, 0.0025f);
+
+    const auto axisLabelX_t = glm::translate(fmat4(1.0f), fvec3(0.101f, 0.0f, 0.0f));
+    const auto axisLabelY_t = glm::translate(fmat4(1.0f), fvec3(0.0f, 0.101f, 0.0f));
+    const auto axisLabelZ_t = glm::translate(fmat4(1.0f), fvec3(0.0f, 0.0f, 0.101f));
+
+
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
@@ -203,7 +219,7 @@ int main()
 
         const auto camera = state->camera;
         auto projection = perspective(radians(camera.fov), state->screenSize.x / state->screenSize.y, 0.1f, 100.0f);
-        const auto eye = vec3(camera.target.x + camera.radius * sin(camera.phi) * cos(camera.theta),
+        const auto eye = fvec3(camera.target.x + camera.radius * sin(camera.phi) * cos(camera.theta),
                               camera.target.y + camera.radius * cos(camera.phi),
                               camera.target.z + camera.radius * sin(camera.phi) * sin(camera.theta)
         );
@@ -217,12 +233,14 @@ int main()
 
 
         // Pass transformation matrices to the shader
-        modelShader.use();
-        modelShader.setMat4("model", centeredModel);
-        modelShader.setMat4("projection", translatedProjection);
-        modelShader.setMat4("view", view);
-
-
+        if (modelShader)
+        {
+            modelShader->use();
+            modelShader->setMat4("model", centeredModel);
+            modelShader->setMat4("projection", translatedProjection);
+            modelShader->setMat4("view", view);
+        }
+    
         // Mesh transformation
         meshShader.use();
         meshShader.setMat4("model", mat4(1.0f));
@@ -230,16 +248,50 @@ int main()
         meshShader.setMat4("view", view);
 
 
-        // Draw DEFFEM model
-        const auto deffemModelCtx = state->currentModelContext();
-        if (deffemModelCtx)
-        {
-            deffemModelCtx->model->draw(&modelShader);
-        }
+        // Axis labels
+        const auto axisLabelXRotation = glm::transpose(glm::lookAt(fvec3(0.0f), eye, glm::vec3(0.0f, 1.0f, 0.0f)));
+        const auto axisLabelYRotation = glm::transpose(glm::lookAt(fvec3(0.0f), eye, glm::vec3(0.0f, 1.0f, 0.0f)));
+        const auto axisLabelZRotation = glm::transpose(glm::lookAt(fvec3(0.0f), eye, glm::vec3(0.0f, 1.0f, 0.0f)));
+
+        rectShader.use();
+        rectShader.setMat4("projection", translatedProjection);
+        rectShader.setMat4("view", view);
+
+        // Draw x axis label
+        rectShader.setMat4("model_t", axisLabelX_t);
+        rectShader.setMat4("model", axisLabelXRotation);
+        rectShader.setVec3("textColor", vec3(1.0f, 0.0f, 0.0f));
+        typer->bindTexture('X');
+        axisLabelX.draw(&rectShader);
+
+        // Draw y axis label
+        rectShader.setVec3("textColor", vec3(0.0f, 1.0f, 0.0f));
+        rectShader.setMat4("model_t", axisLabelY_t);
+        rectShader.setMat4("model", axisLabelYRotation);
+        typer->bindTexture('Y');
+        axisLabelY.draw(&rectShader);
+
+        // Draw z axis label
+        rectShader.setVec3("textColor", vec3(0.0f, 0.0f, 1.0f));
+        rectShader.setMat4("model_t", axisLabelZ_t);
+        rectShader.setMat4("model", axisLabelZRotation);
+        typer->bindTexture('Z');
+        axisLabelZ.draw(&rectShader);
 
 
         // Draw mesh    
         mesh.draw(&meshShader);
+
+
+        // Draw DEFFEM model
+        const auto deffemModelCtx = state->currentModelContext();
+        if (deffemModelCtx)
+        {
+            deffemModelCtx->model->draw(modelShader);
+        }
+
+
+        
 
 
         // Draw heatmap
@@ -327,6 +379,19 @@ void fileDropCallback(GLFWwindow* window, const int count, const char** paths)
     }
 
     state->refresh();
+
+    const auto ctx = state->currentModelContext();
+    if (ctx && ctx->info.elementCount == 0)
+    {
+        modelShader = sphShader;
+    }
+    else if (ctx)
+    {
+        modelShader = mesShader;
+    } 
+
+    modelShader->use();
+    modelShader->setVec3("intersection", settings.modelIntersection);
 }
 
 void processInput(GLFWwindow* window)
@@ -386,7 +451,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         {
             cout << "[EVENT] Reset settings" << endl;
             settings.resetAll();
-            state->modelScale = settings.initialModelScale;
+            state->modelScale = settings.modelScale;
             state->animation.tickMillis = milliseconds(settings.animationTickMillis);
             glPointSize(settings.pointSize);
         }
@@ -543,31 +608,33 @@ void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 
 void windowSizeCallback(GLFWwindow* window, int width, int height)
 {
-    glViewport(0, 0, width, height);
+    if (width > 0 && height > 0) {
+        glViewport(0, 0, width, height);
 
-    const auto screenSize = fvec2(width, height);
-    state->screenSize = screenSize;
+        const auto screenSize = fvec2(width, height);
+        state->screenSize = screenSize;
 
-    state->HUDprojection = ortho(0.0f, static_cast<GLfloat>(width), 0.0f,
-                                 static_cast<GLfloat>(height));
+        state->HUDprojection = ortho(0.0f, static_cast<GLfloat>(width), 0.0f,
+            static_cast<GLfloat>(height));
 
-    if (state->heatmap)
-    {
-        state->heatmap->setPosition(fvec2(25, height / 2));
+        if (state->heatmap)
+        {
+            state->heatmap->setPosition(fvec2(25, height / 2));
+        }
+
+        globalTextShader->setMat4("projection", state->HUDprojection);
+
+        repeatAnimationButton->setPosition(fvec2(width - 160.0f, height - 40.0f));
+        firstAnimationStepButton->setPosition(fvec2(width - 120.0f, height - 40.0f));
+        playAnimationButton->setPosition(fvec2(width - 80.0f, height - 40.0f));
+        lastAnimationStepButton->setPosition(fvec2(width - 40.0f, height - 40.0f));
+
+        scalePointDownButton->setPosition(fvec2(width - 80.0f, height - 80.0f));
+        scalePointUpButton->setPosition(fvec2(width - 40.0f, height - 80.0f));
+
+        decreaseAnimationSpeedButton->setPosition(fvec2(width - 80.0f, height - 120.0f));
+        increaseAnimationSpeedButton->setPosition(fvec2(width - 40.0f, height - 120.0f));
     }
-
-    globalTextShader->setMat4("projection", state->HUDprojection);
-
-    repeatAnimationButton->setPosition(fvec2(width - 160.0f, height - 40.0f));
-    firstAnimationStepButton->setPosition(fvec2(width - 120.0f, height - 40.0f));
-    playAnimationButton->setPosition(fvec2(width - 80.0f, height - 40.0f));
-    lastAnimationStepButton->setPosition(fvec2(width - 40.0f, height - 40.0f));
-
-    scalePointDownButton->setPosition(fvec2(width - 80.0f, height - 80.0f));
-    scalePointUpButton->setPosition(fvec2(width - 40.0f, height - 80.0f));
-
-    decreaseAnimationSpeedButton->setPosition(fvec2(width - 80.0f, height - 120.0f));
-    increaseAnimationSpeedButton->setPosition(fvec2(width - 40.0f, height - 120.0f));
 }
 
 

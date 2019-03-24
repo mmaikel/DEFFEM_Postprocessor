@@ -126,6 +126,15 @@ void Typer::renderText(Shader* s, std::string text, glm::fvec2 pos, GLfloat size
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void Typer::bindTexture(char text)
+{
+    glActiveTexture(GL_TEXTURE0);
+
+    const Letter ch = letters[text];
+
+    glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+}
+
 Typer::~Typer()
 {
     letters.clear();

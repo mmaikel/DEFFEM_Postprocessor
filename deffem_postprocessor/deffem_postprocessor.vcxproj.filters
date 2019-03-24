@@ -54,6 +54,18 @@
     <None Include="resources\application.conf">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="shaders\axis_label.fs">
+      <Filter>Shader files</Filter>
+    </None>
+    <None Include="shaders\axis_label.vs">
+      <Filter>Shader files</Filter>
+    </None>
+    <None Include="shaders\model_sph.vs">
+      <Filter>Shader files</Filter>
+    </None>
+    <None Include="shaders\model_mes.vs">
+      <Filter>Shader files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp">

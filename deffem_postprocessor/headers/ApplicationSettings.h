@@ -43,10 +43,11 @@ namespace deffem
         Color meshPlaneColor;
         glm::fvec2 heatmapSize;
         bool showMeshPlane;
-        GLfloat initialModelScale;
+        GLfloat modelScale;
         long animationTickMillis;
         GLuint lineWidth;
         GLuint pointSize;
+        glm::fvec3 modelIntersection;
 
         std::map<std::string, std::string> config;
 

@@ -70,7 +70,7 @@ ModelInfo FileParser::readSections(const string& filename, vector<GLfloat>& vert
     const auto minValue = *min_element(std::begin(values), std::end(values));
 
     // Compose a vector with following structure: x1, y1, z1, r1, g1, b1, x2, y2, z2, r2, g2, b2, ... 
-    for (auto val : deffem::enumerate(values))
+    for (auto val : enumerate(values))
     {
         const auto normalizedVal = (val.item - minValue) / (maxValue - minValue);
         const auto insertIdx = val.index * 3;
@@ -101,7 +101,7 @@ ModelInfo FileParser::readSections(const string& filename, vector<GLfloat>& vert
     return modelInfo;
 }
 
-std::map<string, string> FileParser::readConfig(string filename)
+std::map<string, string> FileParser::readConfig(const string filename)
 {
     ifstream file;
     auto map = std::map<string, string>();
@@ -146,7 +146,7 @@ unsigned long FileParser::processLine(const string& line, vector<GLfloat>& verti
     string nodeNumber;
     auto idx = 0;
 
-    vector<float> value;
+    vector<GLfloat> value;
 
 
     while (getline(ss, element, separator))
@@ -176,13 +176,13 @@ unsigned long FileParser::processLine(const string& line, vector<GLfloat>& verti
     }
     else if (value.size() == 3)
     {
-        auto x = value[0];
-        auto y = value[1];
-        auto z = value[2];
+        const auto x = value[0];
+        const auto y = value[1];
+        const auto z = value[2];
 
-        auto mag = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
+        const auto magnitude = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
 
-        values.push_back(mag);
+        values.push_back(magnitude);
     }
 
 
@@ -199,65 +199,65 @@ unsigned long FileParser::processLine(const string& line, vector<GLuint>& indice
     getline(ss, connectionNumber, separator);
     getline(ss, sectionId, separator);
 
-    GLuint _indices[8];
+    GLuint nodeNumbers[8];
     auto idx = 0;
 
     while (idx < 8 && getline(ss, element, separator))
     {
         if (!element.empty())
         {
-            _indices[idx] = stoi(element) - 1;
+            nodeNumbers[idx] = stoi(element) - 1;
             idx++;
         }
     }
 
-    if (idx > 8)
+    if (idx != 8)
     {
         cout << "[ERROR]\tWrong input file format: There must be 8 node numbers in every row";
     }
 
     // Builds cube with triangles
-    indices.push_back(_indices[0]);
-    indices.push_back(_indices[1]);
-    indices.push_back(_indices[2]);
-    indices.push_back(_indices[0]);
-    indices.push_back(_indices[2]);
-    indices.push_back(_indices[3]);
+    indices.push_back(nodeNumbers[0]);
+    indices.push_back(nodeNumbers[1]);
+    indices.push_back(nodeNumbers[2]);
+    indices.push_back(nodeNumbers[0]);
+    indices.push_back(nodeNumbers[2]);
+    indices.push_back(nodeNumbers[3]);
 
-    indices.push_back(_indices[1]);
-    indices.push_back(_indices[5]);
-    indices.push_back(_indices[6]);
-    indices.push_back(_indices[1]);
-    indices.push_back(_indices[6]);
-    indices.push_back(_indices[2]);
+    indices.push_back(nodeNumbers[1]);
+    indices.push_back(nodeNumbers[5]);
+    indices.push_back(nodeNumbers[6]);
+    indices.push_back(nodeNumbers[1]);
+    indices.push_back(nodeNumbers[6]);
+    indices.push_back(nodeNumbers[2]);
 
-    indices.push_back(_indices[2]);
-    indices.push_back(_indices[6]);
-    indices.push_back(_indices[7]);
-    indices.push_back(_indices[2]);
-    indices.push_back(_indices[7]);
-    indices.push_back(_indices[3]);
+    indices.push_back(nodeNumbers[2]);
+    indices.push_back(nodeNumbers[6]);
+    indices.push_back(nodeNumbers[7]);
+    indices.push_back(nodeNumbers[2]);
+    indices.push_back(nodeNumbers[7]);
+    indices.push_back(nodeNumbers[3]);
 
-    indices.push_back(_indices[0]);
-    indices.push_back(_indices[4]);
-    indices.push_back(_indices[7]);
-    indices.push_back(_indices[0]);
-    indices.push_back(_indices[7]);
-    indices.push_back(_indices[3]);
+    indices.push_back(nodeNumbers[0]);
+    indices.push_back(nodeNumbers[4]);
+    indices.push_back(nodeNumbers[7]);
+    indices.push_back(nodeNumbers[0]);
+    indices.push_back(nodeNumbers[7]);
+    indices.push_back(nodeNumbers[3]);
 
-    indices.push_back(_indices[1]);
-    indices.push_back(_indices[5]);
-    indices.push_back(_indices[4]);
-    indices.push_back(_indices[1]);
-    indices.push_back(_indices[4]);
-    indices.push_back(_indices[0]);
+    indices.push_back(nodeNumbers[1]);
+    indices.push_back(nodeNumbers[5]);
+    indices.push_back(nodeNumbers[4]);
+    indices.push_back(nodeNumbers[1]);
+    indices.push_back(nodeNumbers[4]);
+    indices.push_back(nodeNumbers[0]);
 
-    indices.push_back(_indices[4]);
-    indices.push_back(_indices[5]);
-    indices.push_back(_indices[6]);
-    indices.push_back(_indices[4]);
-    indices.push_back(_indices[6]);
-    indices.push_back(_indices[7]);
+    indices.push_back(nodeNumbers[4]);
+    indices.push_back(nodeNumbers[5]);
+    indices.push_back(nodeNumbers[6]);
+    indices.push_back(nodeNumbers[4]);
+    indices.push_back(nodeNumbers[6]);
+    indices.push_back(nodeNumbers[7]);
 
     return stoul(connectionNumber);
 }

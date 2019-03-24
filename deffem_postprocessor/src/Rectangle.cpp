@@ -5,8 +5,8 @@ deffem::Rectangle::Rectangle(GLfloat x, GLfloat y, GLfloat z, GLfloat width, GLf
 {
 
     GLfloat vertices[] = {
-        x, y, z, 0.0f, 1.0f,
-        x + width, y, z, 1.0f, 1.0f,
+        x, y, z, 0.0f, 1.0f,         //x1
+        x + width, y, z, 1.0f, 1.0f, //x2
         x + width, y + height, z, 1.0f, 0.0f,
         x, y + height, z, 0.0f, 0.0f
     };

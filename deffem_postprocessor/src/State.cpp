@@ -20,7 +20,7 @@ State::State(ApplicationSettings* settings)
     this->animation = AnimationState();
     this->animation.tickMillis = milliseconds(settings->animationTickMillis);
     this->animation.repeat = false;
-    this->modelScale = settings->initialModelScale;
+    this->modelScale = settings->modelScale;
     this->HUDprojection = ortho(0.0f, static_cast<GLfloat>(settings->screenResolution.x), 0.0f,
         static_cast<GLfloat>(settings->screenResolution.y));
 }

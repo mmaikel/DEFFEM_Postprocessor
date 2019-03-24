@@ -135,10 +135,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="resources\application.conf" />
+    <None Include="shaders\axis_label.fs" />
+    <None Include="shaders\axis_label.vs" />
     <None Include="shaders\control.fs" />
     <None Include="shaders\control.vs" />
     <None Include="shaders\heatmap.fs" />
     <None Include="shaders\heatmap.vs" />
+    <None Include="shaders\model_mes.vs" />
+    <None Include="shaders\model_sph.vs" />
     <None Include="shaders\shader.fs" />
     <None Include="shaders\shader.vs" />
     <None Include="shaders\text.fs" />
