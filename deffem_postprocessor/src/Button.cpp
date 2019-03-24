@@ -50,7 +50,7 @@ void Button::draw()
 
 void Button::draw(Shader* shader)
 {
-    const auto translate = glm::translate(projection, glm::fvec3(position.x, position.y, 0.0));
+    const auto translate = glm::translate(*projection, glm::fvec3(position.x, position.y, 0.0));
     
     shader->use();
     shader->setMat4("projection", translate);
@@ -60,10 +60,9 @@ void Button::draw(Shader* shader)
 }
 
 // Sets new window size
-void Button::setViewport(glm::fvec2 windowSize)
+void Button::setProjection(glm::fmat4* projection)
 {
-    projection = glm::ortho(0.0f, static_cast<GLfloat>(windowSize.x), 0.0f,
-        static_cast<GLfloat>(windowSize.y));
+    this->projection = projection;
 }
 
 // Sets new position
@@ -81,7 +80,7 @@ bool Button::isClicked(glm::fvec2 pos)
     return inX && inY;
 }
 
-void Button::changeTexture(std::string texturePath)
+void Button::changeTexture(const std::string& texturePath)
 {
     glDeleteTextures(1, &texture);
     

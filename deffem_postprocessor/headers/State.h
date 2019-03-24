@@ -21,6 +21,8 @@ namespace deffem {
 
         glm::fvec2 screenSize;
 
+        glm::fmat4 HUDprojection;
+
         MouseState mouse;
 
         Camera camera;
@@ -29,7 +31,7 @@ namespace deffem {
 
         std::vector<ModelContext*> deffemModelContexts;
 
-        int currentModelIndex;
+        size_t currentModelIndex;
 
         AnimationState animation;
 
@@ -44,11 +46,11 @@ namespace deffem {
         void clearModels();
         void refresh();
 
-        void animationTick();
+        bool animationTick();
         void restartAnimation();
         bool nextModel();
         bool previousModel();
-        void changeModel(int index);
+        bool changeModel(size_t index);
         ModelContext* currentModelContext();
 
         void displayStateInfoText(Shader* textShader, Typer* typer);

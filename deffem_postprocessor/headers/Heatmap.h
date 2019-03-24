@@ -6,6 +6,7 @@
 #include "ModelInfo.h"
 #include <list>
 #include "CustomObject.h"
+#include "Rectangle.h"
 
 namespace deffem
 {
@@ -13,20 +14,27 @@ namespace deffem
     {
     public:
 
-        Heatmap(glm::fvec2 pos, glm::fvec2 size, ModelInfo modelInfo, Color textColor);
+        Heatmap(glm::fvec2 pos, glm::fvec2 size, ModelInfo modelInfo, const Color& textColor);
 
         ~Heatmap();
 
         void draw(Shader* shader, Shader* textShader, Typer* typer);
 
-        void getHeatMapColor(float value, float* red, float* green, float* blue);
+        void getHeatMapColor(float value, float* red, float* green, float* blue) const;
+
+        void setProjection(glm::fmat4* projection);
+
+        void setPosition(glm::fvec2 pos);
+
 
     private:
 
         std::vector<float> valPoints;
-        glm::vec3 position;
+
+        glm::fmat4* projection;
+        glm::vec2 position;
         CustomObject* heatmap;
-        std::list<glm::vec4> valuesPositions;
+        std::list<std::pair<glm::fvec4, Rectangle>> heatMapRows;
         ModelInfo modelInfo;
         Color textColor;
     };

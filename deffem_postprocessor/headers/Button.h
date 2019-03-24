@@ -16,13 +16,13 @@ namespace deffem {
 
         void draw() override;
 
-        void setViewport(glm::fvec2 windowSize);
+        void setProjection(glm::fmat4* projection);
 
         void setPosition(glm::fvec2 pos);
 
         bool isClicked(glm::fvec2 pos);
 
-        void changeTexture(std::string texturePath);
+        void changeTexture(const std::string& texturePath);
 
         unsigned int texture;
 
@@ -32,7 +32,7 @@ namespace deffem {
 
         glm::fvec2 size;
 
-        glm::fmat4 projection;
+        glm::fmat4* projection;
 
     };
 

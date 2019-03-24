@@ -11,6 +11,7 @@ namespace deffem
     public:
         bool play;
         bool isFinished;
+        bool repeat;
         std::chrono::milliseconds nextDeadline;
         std::chrono::milliseconds tickMillis;
 

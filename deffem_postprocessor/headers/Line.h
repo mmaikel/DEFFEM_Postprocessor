@@ -11,11 +11,15 @@ namespace deffem
     public:
 
         Line(glm::vec3 p1, glm::vec3 p2, Color color);
-        // ~Line();
-
+        
         void draw() override;
 
         void draw(Shader* shader) override;
+
+        void draw(Shader* shader) const;
+
+        void destroy() override;
+
     };
 }
 #endif

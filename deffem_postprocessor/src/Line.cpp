@@ -1,7 +1,8 @@
 #include "../headers/Line.h"
 
+using namespace deffem;
 
-deffem::Line::Line(glm::vec3 p1, glm::vec3 p2, Color color)
+Line::Line(glm::vec3 p1, glm::vec3 p2, Color color)
 {
     GLfloat vertices[] = {
         p1.x, p1.y, p1.z, color.red, color.green, color.blue,
@@ -12,6 +13,7 @@ deffem::Line::Line(glm::vec3 p1, glm::vec3 p2, Color color)
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
     glBindVertexArray(VAO);
+
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(GLfloat), vertices, GL_STATIC_DRAW);
@@ -26,23 +28,32 @@ deffem::Line::Line(glm::vec3 p1, glm::vec3 p2, Color color)
     glEnableVertexAttribArray(1);
 }
 
-// deffem::Line::~Line()
-// {
-//     glDeleteVertexArrays(1, &VAO);
-//     glDeleteBuffers(1, &VBO);
-//     glDeleteBuffers(1, &EBO);
-// }
+
+void Line::destroy()
+{
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
+}
 
 
-void deffem::Line::draw()
+void Line::draw()
 {
     glBindVertexArray(this->VAO);
     glDrawArrays(GL_LINES, 0, 6);
 }
 
-void deffem::Line::draw(Shader* shader)
+void Line::draw(Shader* shader) 
 {
     shader->use();
     glBindVertexArray(this->VAO);
     glDrawArrays(GL_LINES, 0, 6);
 }
+
+void Line::draw(Shader* shader) const
+{
+    shader->use();
+    glBindVertexArray(this->VAO);
+    glDrawArrays(GL_LINES, 0, 6);
+}
+

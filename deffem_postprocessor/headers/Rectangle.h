@@ -17,7 +17,7 @@ namespace deffem
 
         Rectangle(GLfloat x, GLfloat y, GLfloat z, GLfloat width, GLfloat height, Color color[4]);
 
-        ~Rectangle();
+        void destroy() override;
 
         void draw(Shader* shader) override;
 

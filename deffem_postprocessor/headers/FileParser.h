@@ -5,6 +5,7 @@
 #include "ModelInfo.h"
 #include <map>
 #include <list>
+#include <glad/glad.h>
 
 namespace deffem
 {
@@ -12,17 +13,18 @@ namespace deffem
     {
     public:
 
-        static ModelInfo readSections(const const std::string& filename, std::vector<float>& verticesAndColors,
-            std::vector<unsigned int>& indices);
+        static ModelInfo readSections(const std::string& filename, std::vector<GLfloat>& verticesAndColors,
+                                      std::vector<GLuint>& indices);
 
         static std::map<std::string, std::string> readConfig(std::string filename);
 
     private:
 
-        static unsigned long processLine(const std::string& line, std::vector<float>& vertices, std::list<float>& values,
-            const char separator = ',');
+        static unsigned long processLine(const std::string& line, std::vector<GLfloat>& vertices,
+                                         std::list<GLfloat>& values,
+                                         char separator = ',');
 
-        static unsigned long processLine(const std::string& line, std::vector<unsigned int>& indices, const char separator = ',');
+        static unsigned long processLine(const std::string& line, std::vector<GLuint>& indices, char separator = ',');
 
         static bool checkSectionChanged(std::string test, std::string& section);
 

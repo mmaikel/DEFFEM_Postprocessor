@@ -15,13 +15,13 @@
 using namespace std;
 using namespace deffem;
 
-ModelInfo FileParser::readSections(const const string& filename, vector<float>& verticesAndColors,
-                                   vector<unsigned int>& indices)
+ModelInfo FileParser::readSections(const string& filename, vector<GLfloat>& verticesAndColors,
+                                   vector<GLuint>& indices)
 {
     ifstream file;
     string currentLine;
     string currentSection;
-    list<float> values;
+    list<GLfloat> values;
     vector<float> vertices;
     unsigned long lastNodeNumber = 0;
     unsigned long lastElementNumber = 0;
@@ -37,7 +37,7 @@ ModelInfo FileParser::readSections(const const string& filename, vector<float>& 
         cout << "[ERROR]\tFailed to open file \"" << filename << "\"" << endl;
     }
 
-    // Read from result file's sections into vectors: `vertices`, `valuesPositions`, `indices`
+    // Read from result file's sections into vectors: `vertices`, `heatMapRows`, `indices`
     while (file.is_open() && !file.eof() && getline(file, currentLine))
     {
         if (checkSectionChanged(currentLine, currentSection))
@@ -66,14 +66,14 @@ ModelInfo FileParser::readSections(const const string& filename, vector<float>& 
         }
     }
 
-    const float maxValue = *max_element(std::begin(values), std::end(values));
-    const float minValue = *min_element(std::begin(values), std::end(values));
+    const auto maxValue = *max_element(std::begin(values), std::end(values));
+    const auto minValue = *min_element(std::begin(values), std::end(values));
 
     // Compose a vector with following structure: x1, y1, z1, r1, g1, b1, x2, y2, z2, r2, g2, b2, ... 
     for (auto val : deffem::enumerate(values))
     {
-        const float normalizedVal = (val.item - minValue) / (maxValue - minValue);
-        const unsigned int insertIdx = val.index * 3;
+        const auto normalizedVal = (val.item - minValue) / (maxValue - minValue);
+        const auto insertIdx = val.index * 3;
         float r, g, b;
 
         getHeatMapColor(normalizedVal, &r, &g, &b);
@@ -138,7 +138,7 @@ std::map<string, string> FileParser::readConfig(string filename)
 }
 
 
-unsigned long FileParser::processLine(const string& line, vector<float>& vertices, list<float>& values,
+unsigned long FileParser::processLine(const string& line, vector<GLfloat>& vertices, list<GLfloat>& values,
                                       const char separator)
 {
     std::stringstream ss(line);
@@ -189,7 +189,7 @@ unsigned long FileParser::processLine(const string& line, vector<float>& vertice
     return stoul(nodeNumber);
 }
 
-unsigned long FileParser::processLine(const string& line, vector<unsigned int>& indices, const char separator)
+unsigned long FileParser::processLine(const string& line, vector<GLuint>& indices, const char separator)
 {
     std::stringstream ss(line);
     string element;
@@ -199,8 +199,8 @@ unsigned long FileParser::processLine(const string& line, vector<unsigned int>& 
     getline(ss, connectionNumber, separator);
     getline(ss, sectionId, separator);
 
-    float _indices[8];
-    int idx = 0;
+    GLuint _indices[8];
+    auto idx = 0;
 
     while (idx < 8 && getline(ss, element, separator))
     {

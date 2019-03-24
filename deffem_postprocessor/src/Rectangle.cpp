@@ -96,7 +96,7 @@ deffem::Rectangle::Rectangle(GLfloat x, GLfloat y, GLfloat z, GLfloat width, GLf
     glEnableVertexAttribArray(1);
 }
 
-deffem::Rectangle::~Rectangle()
+void deffem::Rectangle::destroy()
 {
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);

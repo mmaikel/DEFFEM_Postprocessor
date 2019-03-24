@@ -15,13 +15,15 @@ namespace deffem
     public:
         MeshPlane(glm::vec3 center, glm::fvec2 size, int gap, deffem::Color meshColor);
 
+        ~MeshPlane();
+
         void draw(deffem::Shader* shader);
 
         void draw();
 
     private:
 
-        std::list<deffem::Line> lines;
+        std::list<Line> lines;
     };
 }
 

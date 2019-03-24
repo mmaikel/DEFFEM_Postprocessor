@@ -51,31 +51,31 @@ Color Color::fromString(std::string colorName)
     return Colors::colors[colorName];
 }
 
-Color Colors::red(1.0, 0.0, 0.0, "red");
+Color Colors::red(1.0f, 0.0f, 0.0f, "red");
 
-Color Colors::green(0.0, 1.0, 0.0, "green");
+Color Colors::green(0.0f, 1.0f, 0.0f, "green");
 
-Color Colors::blue(0.0, 0.0, 1.0, "blue");
+Color Colors::blue(0.0f, 0.0f, 1.0f, "blue");
 
-Color Colors::black(0.0, 0.0, 0.0, "black");
+Color Colors::black(0.0f, 0.0f, 0.0f, "black");
 
 Color Colors::darkGray(0.15f, 0.15f, 0.17f, "dark-gray");
 
-Color Colors::gray(0.3, 0.3, 0.32, "gray");
+Color Colors::gray(0.3f, 0.3f, 0.32f, "gray");
 
 Color Colors::lightGray(0.55f, 0.55f, 0.57f, "light-gray");
 
-Color Colors::lightBlue(0.53, 0.8, 0.98, "light-blue");
+Color Colors::lightBlue(0.53f, 0.8f, 0.98f, "light-blue");
 
-Color Colors::white(1.0, 1.0, 1.0, "white");
+Color Colors::white(1.0f, 1.0f, 1.0f, "white");
 
-Color Colors::yellow(1.0, 1.0, 0.4, "yellow");
+Color Colors::yellow(1.0f, 1.0f, 0.4f, "yellow");
 
-Color Colors::orange(1.0, 0.65, 0.0, "orange");
+Color Colors::orange(1.0f, 0.65f, 0.0f, "orange");
 
-Color Colors::magenta(1.0, 0.0, 0.564, "magenta");
+Color Colors::magenta(1.0f, 0.0f, 0.564f, "magenta");
 
-Color Colors::purple(0.5, 0.0, 0.5, "purple");
+Color Colors::purple(0.5f, 0.0f, 0.5f, "purple");
 
 std::map<std::string, Color> Colors::colors = std::map<std::string, Color>{
     std::pair<std::string, Color>(red.colorName, red),

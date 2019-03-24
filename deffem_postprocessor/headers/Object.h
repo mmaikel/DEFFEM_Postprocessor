@@ -15,6 +15,8 @@ namespace deffem
 
         virtual void draw(Shader* shader) = 0;
 
+        virtual void destroy() = 0;
+
     protected:
 
         GLuint VAO, VBO, EBO = 0;

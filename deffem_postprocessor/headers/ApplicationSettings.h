@@ -37,30 +37,24 @@ namespace deffem
     public:
 
         glm::vec2 screenResolution;
-
         ThemeVariant::ThemeVariants themeVariant;
-
         Color backgroundColor;
-
         Color textColor;
-
         Color meshPlaneColor;
-
         glm::fvec2 heatmapSize;
-
         bool showMeshPlane;
-
-        float initialModelScale;
-
+        GLfloat initialModelScale;
         long animationTickMillis;
+        GLuint lineWidth;
+        GLuint pointSize;
 
-        int lineWidth;
-
-        int pointSize;
+        std::map<std::string, std::string> config;
 
         ApplicationSettings();
 
         explicit ApplicationSettings(std::map<std::string, std::string> config);
+
+        void resetAll();
 
     private:
 
@@ -69,13 +63,13 @@ namespace deffem
             switch (themeVariant)
             {
             case ThemeVariant::light:
-                return {0.0, 0.0, 0.0};
+                return {0.0f, 0.0f, 0.0f};
 
             case ThemeVariant::dark:
-                return {1.0, 1.0, 1.0};
+                return {1.0f, 1.0f, 1.0f};
 
             default:
-                return {0.5, 0.5, 0.5};
+                return {0.5f, 0.5f, 0.5f};
             }
         }
 
@@ -84,13 +78,13 @@ namespace deffem
             switch (themeVariant)
             {
             case ThemeVariant::light:
-                return {0.8, 0.8, 0.8};
+                return {0.8f, 0.8f, 0.8f};
 
             case ThemeVariant::dark:
-                return {0.1, 0.1, 0.1};
+                return {0.1f, 0.1f, 0.1f};
 
             default:
-                return {0.5, 0.5, 0.5};
+                return {0.5f, 0.5f, 0.5f};
             }
         }
     };

@@ -3,43 +3,50 @@
 #include <list>
 #include "../headers/Heatmap.h"
 #include "../headers/Rectangle.h"
+#include "enumerate.cpp"
+#include <glm/glm/glm.hpp>
+#include <glm/glm/gtc/matrix_transform.hpp>
 
 using namespace deffem;
+using namespace std;
+using namespace glm;
 
 
-Heatmap::Heatmap(glm::fvec2 pos, glm::fvec2 size, ModelInfo modelInfo, Color textColor)
+Heatmap::Heatmap(const fvec2 pos, const fvec2 size, const ModelInfo modelInfo, const Color& textColor)
 {
     this->textColor = textColor;
-    position = glm::vec3(pos.x, pos.y, 0.0f);
-  
+    position = pos;
+
+    const auto localPosition = fvec2(0.0f);
+
     this->modelInfo = modelInfo;
 
     std::vector<float> vertices;
     std::vector<unsigned int> indices;
 
-    auto min = modelInfo.minMaxValue.min;
-    auto max = modelInfo.minMaxValue.max;
+    const auto min = modelInfo.minMaxValue.min;
+    const auto max = modelInfo.minMaxValue.max;
 
-    int precision = 10;
-    float heightGap = size.y / precision;
-    float valueGap = (max - min) / precision;
+    const auto precision = 10;
+    const auto heightGap = size.y / precision;
+    const auto valueGap = (max - min) / precision;
     float red, green, blue;
 
     for (auto i = 0; i < precision * 2; i++)
     {
-        auto val = (i * valueGap) + min;
-        const float normalizedVal = (val - min) / (max - min);
+        const auto val = (i * valueGap) + min;
+        const auto normalizedVal = (val - min) / (max - min);
         getHeatMapColor(normalizedVal, &red, &green, &blue);
 
-        vertices.push_back(pos.x);
-        vertices.push_back(pos.y + (heightGap * i));
+        vertices.push_back(localPosition.x);
+        vertices.push_back(localPosition.y + (heightGap * i));
         vertices.push_back(0.0f);
         vertices.push_back(red);
         vertices.push_back(green);
         vertices.push_back(blue);
 
-        vertices.push_back(pos.x + size.x);
-        vertices.push_back(pos.y + (heightGap * i));
+        vertices.push_back(localPosition.x + size.x);
+        vertices.push_back(localPosition.y + (heightGap * i));
         vertices.push_back(0.0f);
         vertices.push_back(red);
         vertices.push_back(green);
@@ -58,13 +65,16 @@ Heatmap::Heatmap(glm::fvec2 pos, glm::fvec2 size, ModelInfo modelInfo, Color tex
             indices.push_back(i - 1);
         }
 
-        valPoints.push_back(pos.x + size.x);
-        valPoints.push_back(pos.y + (heightGap * i));
+        valPoints.push_back(localPosition.x + size.x);
+        valPoints.push_back(localPosition.y + (heightGap * i));
         valPoints.push_back(0.0f);
 
         if (i <= 10)
         {
-            valuesPositions.push_front(glm::vec4(pos.x + size.x + 5.0f, pos.y + (heightGap * i), 0.0f, val));
+            const auto rowPosition = fvec2(localPosition.x + size.x + 5.0f, localPosition.y + (heightGap * i));
+            auto rect = Rectangle(rowPosition.x, rowPosition.y, 0.0, 15.0f, 1.0f, textColor);
+            auto p = fvec4(rowPosition.x, rowPosition.y, 0.0f, val);
+            heatMapRows.push_front(std::pair<fvec4, Rectangle>(p, rect));
         }
     }
 
@@ -75,10 +85,10 @@ Heatmap::Heatmap(glm::fvec2 pos, glm::fvec2 size, ModelInfo modelInfo, Color tex
     heatmap = new deffem::CustomObject(vertices, indices, attribsSizes, 6);
 }
 
-void Heatmap::getHeatMapColor(float value, float* red, float* green, float* blue)
+void Heatmap::getHeatMapColor(float value, float* red, float* green, float* blue) const
 {
-    const int NUM_COLORS = 4;
-    static float color[NUM_COLORS][3] = {{0, 0, 1}, {0, 1, 0}, {1, 1, 0}, {1, 0, 0}};
+    const auto numColors = 4;
+    static float color[numColors][3] = {{0, 0, 1}, {0, 1, 0}, {1, 1, 0}, {1, 0, 0}};
     // A static array of 4 colors:  (blue,   green,  yellow,  red) using {r,g,b} for each.
 
     int idx1; // |-- Our desired color will be between these two indexes in "color".
@@ -86,10 +96,10 @@ void Heatmap::getHeatMapColor(float value, float* red, float* green, float* blue
     float fractBetween = 0; // Fraction between "idx1" and "idx2" where our value is.
 
     if (value <= 0) { idx1 = idx2 = 0; } // accounts for an input <=0
-    else if (value >= 1) { idx1 = idx2 = NUM_COLORS - 1; } // accounts for an input >=0
+    else if (value >= 1) { idx1 = idx2 = numColors - 1; } // accounts for an input >=0
     else
     {
-        value = value * (NUM_COLORS - 1); // Will multiply value by 3.
+        value = value * (numColors - 1); // Will multiply value by 3.
         idx1 = floor(value); // Our desired color will be after this index.
         idx2 = idx1 + 1; // ... and before this index (inclusive).
         fractBetween = value - float(idx1); // Distance between the two indexes (0-1).
@@ -103,30 +113,53 @@ void Heatmap::getHeatMapColor(float value, float* red, float* green, float* blue
 Heatmap::~Heatmap()
 {
     delete heatmap;
+    for (auto& row : heatMapRows)
+    {
+        row.second.destroy();
+    }
 }
 
 
 void Heatmap::draw(Shader* shader, Shader* tShader, Typer* typer)
 {
-    typer->renderText(tShader, "Node count:", glm::fvec2(position.x, position.y - 25.0f), 0.3f,
-                      textColor);
-    typer->renderText(tShader, std::to_string(modelInfo.nodeCount), glm::fvec2(position.x + 105.0, position.y - 25.0f), 0.3f,
-                      textColor);
-    typer->renderText(tShader, "Element count:", glm::fvec2(position.x, position.y - 50.0f), 0.3f,
-                      textColor);
-    typer->renderText(tShader, std::to_string(modelInfo.elementCount), glm::fvec2(position.x + 105.0, position.y - 50.0f),
-                      0.3f,
-                      textColor);
+    const auto translate = glm::translate(*projection, glm::fvec3(position.x, position.y, 0.0));
 
+    shader->use();
+    shader->setMat4("projection", translate);
+
+   
+
+    tShader->use();
+    tShader->setMat4("projection", translate);
 
     heatmap->draw(shader);
-    for (auto pos : valuesPositions)
+
+    for (const auto& row : heatMapRows)
     {
-        deffem::Rectangle rec(pos.x, pos.y, pos.z, 15.0f, 1.0f, textColor);
-        rec.draw(shader);
-        typer->renderText(tShader, std::to_string(pos.w), glm::fvec2(pos.x + 25.0f, pos.y), 0.3f,
-                          textColor);
+        const auto posVal = row.first;
+        auto rect = row.second;
+        rect.draw(shader);
+        typer->renderText(tShader, to_string(posVal.w), fvec2(posVal.x + 25.0f, posVal.y), 0.3f, textColor);
     }
+
+    typer->renderText(tShader, "Node count:", fvec2(0, 0 - 25.0f), 0.3f, textColor);
+    typer->renderText(tShader, "Element count:", fvec2(0, 0 - 50.0f), 0.3f, textColor);
+
+    typer->renderText(tShader, to_string(modelInfo.elementCount), fvec2(0 + 105.0, 0 - 50.0f), 0.3f,
+        textColor);
+    typer->renderText(tShader, to_string(modelInfo.nodeCount), fvec2(0 + 105.0, 0 - 25.0f), 0.3f,
+        textColor);
+}
+
+// Sets new window size
+void Heatmap::setProjection(glm::fmat4* projection)
+{
+    this->projection = projection;
 }
 
 
+// Sets new position
+void Heatmap::setPosition(glm::fvec2 pos)
+{
+    position = pos;
+}

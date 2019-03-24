@@ -10,20 +10,22 @@ namespace deffem
     class CustomObject final : protected Object
     {
     public:
-        CustomObject(std::vector<float> vertices, std::vector<unsigned int> indices,
-            std::vector<unsigned int> attributes, const int stride);
+        CustomObject(std::vector<GLfloat> vertices, std::vector<GLuint> indices,
+            std::vector<GLuint> attributes, int stride);
 
-        CustomObject(std::vector<float> vertices, std::vector<unsigned int> attributes, int stride);
+        CustomObject(std::vector<GLfloat> vertices, std::vector<GLuint> attributes, int stride);
 
         void draw(Shader* shader) override;
 
         void draw() override;
 
+        void destroy() override;
+
         ~CustomObject();
 
     private:
-        int indicesSize;
-        int verticesSize;
+        int indicesSize_;
+        int verticesSize_;
     };
 }
 

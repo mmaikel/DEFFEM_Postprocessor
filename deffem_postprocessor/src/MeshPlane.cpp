@@ -1,52 +1,58 @@
 #include <list>
 #include "../headers/MeshPlane.h"
+#include <functional>
 
 using namespace deffem;
 
 
-MeshPlane::MeshPlane(glm::vec3 center, glm::fvec2 size, int gap, Color meshColor)
+MeshPlane::MeshPlane(glm::vec3 center, const glm::fvec2 size, const int gap, const Color meshColor)
+{
+    const auto dx = size.x / gap;
+
+    for (auto i = 0; i <= gap; i++)
     {
-        auto dx = size.x / gap;
+        const auto pos = i * dx - size.x / 2;
 
+        Line line1(glm::vec3(pos, 0.0f, 0.0f - (size.y / 2)), glm::vec3(pos, 0.0f, size.y / 2),
+                   meshColor);
+        Line line2(glm::vec3(0.0f - (size.y / 2), 0.0f, pos), glm::vec3(size.y / 2, 0.0f, pos),
+                   meshColor);
 
-        for (auto i = 0; i <= gap; i++)
-        {
-            auto pos = i * dx - size.x / 2;
-
-
-            deffem::Line line1(glm::vec3(pos, 0.0f, 0.0f - (size.y / 2)), glm::vec3(pos, 0.0f, size.y / 2),
-                meshColor);
-            deffem::Line line2(glm::vec3(0.0f - (size.y / 2), 0.0f, pos), glm::vec3(size.y / 2, 0.0f, pos),
-                meshColor);
-
-            lines.push_front(line1);
-            lines.push_front(line2);
-        }
-
-        deffem::Line axisX(glm::vec3(-0.1f, 0.0001f, 0.0f), glm::vec3(0.1f, 0.0001f, 0.0f), Colors::red);
-        deffem::Line axisY(glm::vec3(-0.0001f, -0.1f, 0.0f), glm::vec3(-0.0001f, 0.1f, 0.0f), Colors::green);
-        deffem::Line axisZ(glm::vec3(0.0f, 0.0001f, -0.1f), glm::vec3(0.0f, 0.0001f, 0.1f), Colors::blue);
-
-        lines.push_back(axisX);
-        lines.push_back(axisY);
-        lines.push_back(axisZ);
+        lines.push_back(line2);
+        lines.push_back(line1);
     }
 
+    const Line axisX(glm::vec3(-0.1f, 0.0001f, 0.0f), glm::vec3(0.1f, 0.0001f, 0.0f), Colors::red);
+    const Line axisY(glm::vec3(-0.0001f, -0.1f, 0.0f), glm::vec3(-0.0001f, 0.1f, 0.0f), Colors::green);
+    const Line axisZ(glm::vec3(0.0f, 0.0001f, -0.1f), glm::vec3(0.0f, 0.0001f, 0.1f), Colors::blue);
 
-    void MeshPlane::draw(Shader* shader)
+    lines.push_back(axisX);
+    lines.push_back(axisY);
+    lines.push_back(axisZ);
+}
+
+MeshPlane::~MeshPlane()
+{
+    for (auto& line : lines)
     {
-        for (auto line : lines)
-        {
-            line.draw(shader);
-        }
+        line.destroy();
     }
+}
 
-    void MeshPlane::draw()
+
+void MeshPlane::draw(Shader* shader)
+{
+
+    for(auto& line : lines)
     {
-        for (auto line : lines)
-        {
-            line.draw();
-        }
+        line.draw(shader);
+    }  
+}
+
+void MeshPlane::draw()
+{
+    for (auto& line : lines)
+    {
+        line.draw();
     }
-
-
+}

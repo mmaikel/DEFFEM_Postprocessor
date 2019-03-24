@@ -1,5 +1,6 @@
 #include "../headers/State.h"
 #include <chrono>
+#include <glm/glm/gtc/matrix_transform.hpp>
 
 
 using namespace std::chrono;
@@ -17,7 +18,11 @@ State::State(ApplicationSettings* settings)
     this->camera = Camera();
     this->currentModelIndex = 0;
     this->animation = AnimationState();
+    this->animation.tickMillis = milliseconds(settings->animationTickMillis);
+    this->animation.repeat = false;
     this->modelScale = settings->initialModelScale;
+    this->HUDprojection = ortho(0.0f, static_cast<GLfloat>(settings->screenResolution.x), 0.0f,
+        static_cast<GLfloat>(settings->screenResolution.y));
 }
 
 State::~State()
@@ -31,7 +36,7 @@ State::~State()
 }
 
 
-void State::animationTick()
+bool State::animationTick()
 {
     if (animation.play)
     {
@@ -45,8 +50,17 @@ void State::animationTick()
             animation.isFinished = !hasNext;
             animation.play = hasNext;
             animation.nextDeadline = currentTimeMillis + animation.tickMillis;
+
+            if(!hasNext && animation.repeat)
+            {
+                restartAnimation();
+            }
         }
+
+        return true;
     }
+
+    return false;
 }
 
 void State::restartAnimation()
@@ -61,36 +75,33 @@ void State::restartAnimation()
 
 bool State::nextModel()
 {
-    if (!deffemModelContexts.empty() && currentModelIndex < deffemModelContexts.size() - 1)
-    {
-        changeModel(currentModelIndex + 1);
-
-        return true;
-    }
-    return false;
+    return changeModel(currentModelIndex + 1);
 }
 
 bool State::previousModel()
 {
-    if (currentModelIndex > 0)
-    {
-        changeModel(currentModelIndex - 1);
+    return changeModel(currentModelIndex - 1);
+}
+
+
+bool State::changeModel(size_t index)
+{
+    if (index >= 0 && index < deffemModelContexts.size()) {
+        currentModelIndex = index;
+        delete heatmap;
+        heatmap = new Heatmap(glm::fvec2(25.0f, screenSize.y / 2),
+            settings->heatmapSize,
+            deffemModelContexts[index]->info,
+            settings->textColor);
+
+        heatmap->setProjection(&HUDprojection);
+
+        currentModelIndex = index;
 
         return true;
     }
 
     return false;
-}
-
-
-void State::changeModel(const int index)
-{
-    currentModelIndex = index;
-    delete heatmap;
-    heatmap = new Heatmap(glm::fvec2(25.0f, screenSize.y / 2),
-                          settings->heatmapSize,
-                          deffemModelContexts[index]->info,
-                          settings->textColor);
 }
 
 void State::clearModels()
@@ -116,6 +127,8 @@ void State::refresh()
                               settings->heatmapSize,
                               deffemModelContexts[0]->info,
                               settings->textColor);
+
+        heatmap->setProjection(&HUDprojection);
     }
     else
     {

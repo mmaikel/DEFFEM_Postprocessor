@@ -11,7 +11,7 @@ namespace deffem
     class Camera
     {
     public:
-        // Camera position 
+
         GLfloat theta;
         GLfloat phi;
         GLfloat radius;
