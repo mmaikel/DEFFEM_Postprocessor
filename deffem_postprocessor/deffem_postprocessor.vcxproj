@@ -161,7 +161,7 @@
     <ClCompile Include="src\Heatmap.cpp" />
     <ClCompile Include="src\Line.cpp" />
     <ClCompile Include="src\Main.cpp" />
-    <ClCompile Include="src\MeshPlane.cpp" />
+    <ClCompile Include="src\GridPlane.cpp" />
     <ClCompile Include="src\MouseState.cpp" />
     <ClCompile Include="src\Rectangle.cpp" />
     <ClCompile Include="src\Shader.cpp" />
@@ -179,7 +179,7 @@
     <ClInclude Include="headers\Heatmap.h" />
     <ClInclude Include="headers\Letter.h" />
     <ClInclude Include="headers\Line.h" />
-    <ClInclude Include="headers\MeshPlane.h" />
+    <ClInclude Include="headers\GridPlane.h" />
     <ClInclude Include="headers\MinMax.h" />
     <ClInclude Include="headers\ModelContext.h" />
     <ClInclude Include="headers\ModelInfo.h" />

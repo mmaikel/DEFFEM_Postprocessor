@@ -2,7 +2,7 @@
 #define OBJECT_H
 
 #include "Shader.h"
-#include <GL/gl.h>
+#include <GL/GL.h>
 
 namespace deffem
 {

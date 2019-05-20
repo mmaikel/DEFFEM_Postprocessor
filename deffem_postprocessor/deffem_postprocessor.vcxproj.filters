@@ -92,9 +92,6 @@
     <ClCompile Include="src\Heatmap.cpp">
       <Filter>Source Files\stage elements</Filter>
     </ClCompile>
-    <ClCompile Include="src\MeshPlane.cpp">
-      <Filter>Source Files\stage elements</Filter>
-    </ClCompile>
     <ClCompile Include="src\enumerate.cpp">
       <Filter>Source Files\utilities</Filter>
     </ClCompile>
@@ -121,6 +118,9 @@
     </ClCompile>
     <ClCompile Include="src\AnimationState.cpp">
       <Filter>Source Files\utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GridPlane.cpp">
+      <Filter>Source Files\stage elements</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -166,9 +166,6 @@
     <ClInclude Include="headers\CustomObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="headers\MeshPlane.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="headers\FileParser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -185,6 +182,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="headers\MouseState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="headers\GridPlane.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

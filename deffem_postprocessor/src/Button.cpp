@@ -36,9 +36,7 @@ Button::Button(glm::fvec2 pos, glm::fvec2 size, std::string texturePath): Rectan
 
 Button::~Button()
 {
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
+    Rectangle::destroy();
 }
 
 

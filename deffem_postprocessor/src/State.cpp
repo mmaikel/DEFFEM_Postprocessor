@@ -16,6 +16,7 @@ State::State(ApplicationSettings* settings)
     this->mouse = MouseState();
     this->heatmap = nullptr;
     this->camera = Camera();
+    this->camera.radius = settings->cameraRadius;
     this->currentModelIndex = 0;
     this->animation = AnimationState();
     this->animation.tickMillis = milliseconds(settings->animationTickMillis);

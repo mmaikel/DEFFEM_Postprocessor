@@ -40,13 +40,14 @@ namespace deffem
         ThemeVariant::ThemeVariants themeVariant;
         Color backgroundColor;
         Color textColor;
-        Color meshPlaneColor;
+        Color gridPlaneColor;
         glm::fvec2 heatmapSize;
-        bool showMeshPlane;
+        bool showGridPlane;
         GLfloat modelScale;
         long animationTickMillis;
-        GLuint lineWidth;
+        GLfloat lineWidth;
         GLuint pointSize;
+        GLfloat cameraRadius;
         glm::fvec3 modelIntersection;
 
         std::map<std::string, std::string> config;
@@ -79,10 +80,10 @@ namespace deffem
             switch (themeVariant)
             {
             case ThemeVariant::light:
-                return {0.8f, 0.8f, 0.8f};
+                return {backgroundColor.red - 0.15f, backgroundColor.green - 0.15f, backgroundColor.blue - 0.15f };
 
             case ThemeVariant::dark:
-                return {0.1f, 0.1f, 0.1f};
+                return { backgroundColor.red + 0.15f, backgroundColor.green + 0.15f, backgroundColor.blue + 0.15f };
 
             default:
                 return {0.5f, 0.5f, 0.5f};

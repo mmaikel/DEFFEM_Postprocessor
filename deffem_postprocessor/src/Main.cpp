@@ -7,7 +7,7 @@
 #include <glm/glm/gtc/matrix_transform.hpp>
 #include <glm/glm/gtc/type_ptr.inl>
 #include "../headers/Heatmap.h"
-#include "../headers/MeshPlane.h"
+#include "../headers/GridPlane.h"
 #include "../headers/Button.h"
 #include <algorithm>
 #include <chrono>
@@ -35,27 +35,29 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 ModelContext* loadModel(char const* filename);
 void buttonsListener(fvec2 mousePos);
 
-vec3 modelOriginDeviation(0.0f);
+vec3 MODEL_ORIGIN_DEVIATION(0.0f);
 
-Button* repeatAnimationButton = nullptr;
-Button* playAnimationButton = nullptr;
-Button* scalePointUpButton = nullptr;
-Button* scalePointDownButton = nullptr;
-Button* lastAnimationStepButton = nullptr;
-Button* firstAnimationStepButton = nullptr;
-Button* decreaseAnimationSpeedButton = nullptr;
-Button* increaseAnimationSpeedButton = nullptr;
-
-
-Typer* typer = nullptr;
-Shader* globalTextShader = nullptr;
-Shader* modelShader = nullptr;
-Shader* sphShader = nullptr;
-Shader* mesShader = nullptr;
+Button* REPEAT_ANIMATION_BUTTON = nullptr;
+Button* PLAY_ANIMATION_BUTTON = nullptr;
+Button* SCALE_POINT_UP_BUTTON = nullptr;
+Button* SCALE_POINT_DOWN_BUTTON = nullptr;
+Button* LAST_ANIMATION_STEP_BUTTON = nullptr;
+Button* FIRST_ANIMATION_STEP_BUTTON = nullptr;
+Button* DECREASE_ANIMATION_SPEED_BUTTON = nullptr;
+Button* INCREASE_ANIMATION_SPEED_BUTTON = nullptr;
+Button* SHOW_GRID_BUTTON = nullptr;
 
 
-ApplicationSettings settings;
-State* state = nullptr;
+Typer* TYPER = nullptr;
+Shader* GLOBAL_TEXT_SHADER = nullptr;
+Shader* MODEL_SHADER = nullptr;
+Shader* SPH_SHADER = nullptr;
+Shader* MES_SHADER = nullptr;
+GridPlane* GRID_PLANE;
+
+
+ApplicationSettings SETTINGS;
+State* STATE = nullptr;
 
 
 int main()
@@ -72,12 +74,12 @@ int main()
 
 
     auto conf = FileParser::readConfig("./resources/application.conf");
-    settings = ApplicationSettings(conf);
-    state = new State(&settings);
+    SETTINGS = ApplicationSettings(conf);
+    STATE = new State(&SETTINGS);
 
 
     // Window initialization
-    GLFWwindow* window = glfwCreateWindow(settings.screenResolution.x, settings.screenResolution.y,
+    GLFWwindow* window = glfwCreateWindow(SETTINGS.screenResolution.x, SETTINGS.screenResolution.y,
                                           "DEFFEM Postprocessing", nullptr, nullptr);
     if (window == nullptr)
     {
@@ -94,7 +96,7 @@ int main()
     }
 
 
-    glViewport(0, 0, settings.screenResolution.x, settings.screenResolution.y);
+    glViewport(0, 0, SETTINGS.screenResolution.x, SETTINGS.screenResolution.y);
 
     // Set OpenGL options
     glEnable(GL_DEPTH_TEST);
@@ -102,8 +104,8 @@ int main()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_TRUE);
     glEnable(GL_LINE_SMOOTH);
-    glLineWidth(settings.lineWidth);
-    glPointSize(settings.pointSize);
+    glLineWidth(SETTINGS.lineWidth);
+    glPointSize(SETTINGS.pointSize);
     glDisable(GL_CULL_FACE);
 
     // Set callbacks
@@ -115,90 +117,96 @@ int main()
     glfwSetDropCallback(window, fileDropCallback);
     glfwSetKeyCallback(window, keyCallback);
 
-    typer = new Typer();
+    TYPER = new Typer();
+    GRID_PLANE = new GridPlane(fvec2(1.0, 1.0), 100, SETTINGS.gridPlaneColor);
 
-
-    MeshPlane mesh(vec3(0.0f, 0.0f, 0.0f), fvec2(1.0f, 1.0f), settings.showMeshPlane ? 60 : 0, settings.meshPlaneColor);
+    GRID_PLANE->showGrid = SETTINGS.showGridPlane;
 
     // Compile and setup the shaders
     Shader textShader("./shaders/text.vs", "./shaders/text.fs");
-    Shader meshShader("./shaders/shader.vs", "./shaders/shader.fs");
+    Shader gridShader("./shaders/shader.vs", "./shaders/shader.fs");
     Shader heatmapShader("./shaders/heatmap.vs", "./shaders/heatmap.fs");
     Shader buttonShader("./shaders/control.vs", "./shaders/control.fs");
-    globalTextShader = new Shader("./shaders/text.vs", "./shaders/text.fs");
+    GLOBAL_TEXT_SHADER = new Shader("./shaders/text.vs", "./shaders/text.fs");
     Shader rectShader("./shaders/axis_label.vs", "./shaders/axis_label.fs");
 
-    sphShader = new Shader("./shaders/model_sph.vs", "./shaders/shader.fs");
-    mesShader = new Shader("./shaders/model_mes.vs", "./shaders/shader.fs");
+    SPH_SHADER = new Shader("./shaders/model_sph.vs", "./shaders/shader.fs");
+    MES_SHADER = new Shader("./shaders/model_mes.vs", "./shaders/shader.fs");
 
 
     textShader.use();
-    textShader.setMat4("projection", state->HUDprojection);
+    textShader.setMat4("projection", STATE->HUDprojection);
 
-    globalTextShader->use();
-    globalTextShader->setMat4("projection", state->HUDprojection);
+    GLOBAL_TEXT_SHADER->use();
+    GLOBAL_TEXT_SHADER->setMat4("projection", STATE->HUDprojection);
 
     heatmapShader.use();
-    heatmapShader.setMat4("projection", state->HUDprojection);
+    heatmapShader.setMat4("projection", STATE->HUDprojection);
 
 
-    repeatAnimationButton = new Button(fvec2(settings.screenResolution.x - 160,
-                                             settings.screenResolution.y - 40),
-                                       fvec2(30),
-                                       "./resources/repeat_off.jpg");
+    REPEAT_ANIMATION_BUTTON = new Button(fvec2(SETTINGS.screenResolution.x - 160.0f,
+                                               SETTINGS.screenResolution.y - 40.0f),
+                                         fvec2(30.0f),
+                                         "./resources/repeat_off.jpg");
 
-    firstAnimationStepButton = new Button(fvec2(settings.screenResolution.x - 120,
-                                                settings.screenResolution.y - 40),
-                                          fvec2(30),
-                                          "./resources/previous_ctrl.jpg");
+    FIRST_ANIMATION_STEP_BUTTON = new Button(fvec2(SETTINGS.screenResolution.x - 120.0f,
+                                                   SETTINGS.screenResolution.y - 40.0f),
+                                             fvec2(30.0f),
+                                             "./resources/previous_ctrl.jpg");
 
-    playAnimationButton = new Button(vec2(settings.screenResolution.x - 80,
-                                          settings.screenResolution.y - 40),
-                                     vec2(30), "./resources/play_ctrl.jpg");
+    PLAY_ANIMATION_BUTTON = new Button(vec2(SETTINGS.screenResolution.x - 80.0f,
+                                            SETTINGS.screenResolution.y - 40.0f),
+                                       vec2(30.0f), "./resources/play_ctrl.jpg");
 
-    lastAnimationStepButton = new Button(vec2(settings.screenResolution.x - 40,
-                                              settings.screenResolution.y - 40),
-                                         vec2(30), "./resources/next_ctrl.jpg");
-
-
-    scalePointDownButton = new Button(vec2(settings.screenResolution.x - 80,
-                                           settings.screenResolution.y - 80),
-                                      vec2(30),
-                                      "./resources/scale_point_down.jpg");
-
-    scalePointUpButton = new Button(vec2(settings.screenResolution.x - 40,
-                                         settings.screenResolution.y - 80),
-                                    vec2(30),
-                                    "./resources/scale_point_up.jpg");
-
-    decreaseAnimationSpeedButton = new Button(vec2(settings.screenResolution.x - 80,
-                                                   settings.screenResolution.y - 120),
-                                              vec2(30),
-                                              "./resources/speed_down.jpg");
-
-    increaseAnimationSpeedButton = new Button(vec2(settings.screenResolution.x - 40,
-                                                   settings.screenResolution.y - 120),
-                                              vec2(30),
-                                              "./resources/speed_up.jpg");
+    LAST_ANIMATION_STEP_BUTTON = new Button(vec2(SETTINGS.screenResolution.x - 40.0f,
+                                                 SETTINGS.screenResolution.y - 40.0f),
+                                            vec2(30.0f), "./resources/next_ctrl.jpg");
 
 
-    repeatAnimationButton->setProjection(&state->HUDprojection);
-    firstAnimationStepButton->setProjection(&state->HUDprojection);
-    playAnimationButton->setProjection(&state->HUDprojection);
-    lastAnimationStepButton->setProjection(&state->HUDprojection);
-    scalePointUpButton->setProjection(&state->HUDprojection);
-    scalePointDownButton->setProjection(&state->HUDprojection);
-    decreaseAnimationSpeedButton->setProjection(&state->HUDprojection);
-    increaseAnimationSpeedButton->setProjection(&state->HUDprojection);
+    SCALE_POINT_DOWN_BUTTON = new Button(vec2(SETTINGS.screenResolution.x - 80.0f,
+                                              SETTINGS.screenResolution.y - 80.0f),
+                                         vec2(30.0f),
+                                         "./resources/scale_point_down.jpg");
+
+    SCALE_POINT_UP_BUTTON = new Button(vec2(SETTINGS.screenResolution.x - 40.0f,
+                                            SETTINGS.screenResolution.y - 80.0f),
+                                       vec2(30.0f),
+                                       "./resources/scale_point_up.jpg");
+
+    DECREASE_ANIMATION_SPEED_BUTTON = new Button(vec2(SETTINGS.screenResolution.x - 80.0f,
+                                                      SETTINGS.screenResolution.y - 120.0f),
+                                                 vec2(30.0f),
+                                                 "./resources/speed_down.jpg");
+
+    INCREASE_ANIMATION_SPEED_BUTTON = new Button(vec2(SETTINGS.screenResolution.x - 40.0f,
+                                                      SETTINGS.screenResolution.y - 120.0f),
+                                                 vec2(30.0f),
+                                                 "./resources/speed_up.jpg");
+
+    SHOW_GRID_BUTTON = new Button(vec2(SETTINGS.screenResolution.x - 25.0f,
+                                       5.0f),
+                                  vec2(20.0f),
+                                  SETTINGS.showGridPlane ? "./resources/grid_shown.jpg" : "./resources/grid_hidden.jpg");
+
+
+    REPEAT_ANIMATION_BUTTON->setProjection(&STATE->HUDprojection);
+    FIRST_ANIMATION_STEP_BUTTON->setProjection(&STATE->HUDprojection);
+    PLAY_ANIMATION_BUTTON->setProjection(&STATE->HUDprojection);
+    LAST_ANIMATION_STEP_BUTTON->setProjection(&STATE->HUDprojection);
+    SCALE_POINT_UP_BUTTON->setProjection(&STATE->HUDprojection);
+    SCALE_POINT_DOWN_BUTTON->setProjection(&STATE->HUDprojection);
+    DECREASE_ANIMATION_SPEED_BUTTON->setProjection(&STATE->HUDprojection);
+    INCREASE_ANIMATION_SPEED_BUTTON->setProjection(&STATE->HUDprojection);
+    SHOW_GRID_BUTTON->setProjection(&STATE->HUDprojection);
 
 
     auto axisLabelX = deffem::Rectangle(0.0f, 0.0f, 0.0f, 0.0025f, 0.0025f);
     auto axisLabelY = deffem::Rectangle(0.0f, 0.0f, 0.0f, 0.0025f, 0.0025f);
     auto axisLabelZ = deffem::Rectangle(0.0f, 0.0f, 0.0f, 0.0025f, 0.0025f);
 
-    const auto axisLabelX_t = glm::translate(fmat4(1.0f), fvec3(0.101f, 0.0f, 0.0f));
-    const auto axisLabelY_t = glm::translate(fmat4(1.0f), fvec3(0.0f, 0.101f, 0.0f));
-    const auto axisLabelZ_t = glm::translate(fmat4(1.0f), fvec3(0.0f, 0.0f, 0.101f));
+    const auto axisLabelX_t = translate(fmat4(1.0f), fvec3(0.105f, 0.0f, 0.0f));
+    const auto axisLabelY_t = translate(fmat4(1.0f), fvec3(0.0f, 0.105f, 0.0f));
+    const auto axisLabelZ_t = translate(fmat4(1.0f), fvec3(0.0f, 0.0f, 0.105f));
 
 
     // Main loop
@@ -206,52 +214,71 @@ int main()
     {
         processInput(window);
         // Render background color
-        glClearColor(settings.backgroundColor.red, settings.backgroundColor.green, settings.backgroundColor.blue, 1.0f);
+        glClearColor(SETTINGS.backgroundColor.red, SETTINGS.backgroundColor.green, SETTINGS.backgroundColor.blue, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        const auto ticked = state->animationTick();
+        const auto ticked = STATE->animationTick();
 
-        if (ticked && !state->animation.play)
-            playAnimationButton->changeTexture("./resources/play_ctrl.jpg");
+        if (ticked && !STATE->animation.play)
+            PLAY_ANIMATION_BUTTON->changeTexture("./resources/play_ctrl.jpg");
 
 
         // DEFFEM Model transformation
 
-        const auto camera = state->camera;
-        auto projection = perspective(radians(camera.fov), state->screenSize.x / state->screenSize.y, 0.1f, 100.0f);
+        const auto camera = STATE->camera;
+        auto projection = perspective(radians(camera.fov), STATE->screenSize.x / STATE->screenSize.y, 0.1f, 100.0f);
         const auto eye = fvec3(camera.target.x + camera.radius * sin(camera.phi) * cos(camera.theta),
-                              camera.target.y + camera.radius * cos(camera.phi),
-                              camera.target.z + camera.radius * sin(camera.phi) * sin(camera.theta)
+                               camera.target.y + camera.radius * cos(camera.phi),
+                               camera.target.z + camera.radius * sin(camera.phi) * sin(camera.theta)
         );
         const auto view = lookAt(fvec3(eye.x, eye.y, eye.z),
                                  fvec3(camera.target.x, camera.target.y, camera.target.z),
                                  fvec3(0.0f, 1.0f, 0.0f));
 
-        auto scaledModel = scale(fmat4(1.0f), fvec3(state->modelScale));
-        const auto centeredModel = translate(scaledModel, modelOriginDeviation);
+        auto scaledModel = scale(fmat4(1.0f), fvec3(STATE->modelScale));
+        const auto centeredModel = translate(scaledModel, MODEL_ORIGIN_DEVIATION);
         const auto translatedProjection = translate(projection, fvec3(camera.offset.x, -camera.offset.y, 0.0f));
 
 
         // Pass transformation matrices to the shader
-        if (modelShader)
+        if (MODEL_SHADER)
         {
-            modelShader->use();
-            modelShader->setMat4("model", centeredModel);
-            modelShader->setMat4("projection", translatedProjection);
-            modelShader->setMat4("view", view);
+            MODEL_SHADER->use();
+            MODEL_SHADER->setMat4("model", centeredModel);
+            MODEL_SHADER->setMat4("projection", translatedProjection);
+            MODEL_SHADER->setMat4("view", view);
         }
-    
+
         // Mesh transformation
-        meshShader.use();
-        meshShader.setMat4("model", mat4(1.0f));
-        meshShader.setMat4("projection", translatedProjection);
-        meshShader.setMat4("view", view);
+        gridShader.use();
+        gridShader.setMat4("model", mat4(1.0f));
+        gridShader.setMat4("projection", translatedProjection);
+        gridShader.setMat4("view", view);
+
+
+        // Draw mesh    
+        GRID_PLANE->draw(&gridShader, SETTINGS.lineWidth);
+
+
+        // Draw DEFFEM model
+        const auto deffemModelCtx = STATE->currentModelContext();
+        if (deffemModelCtx)
+        {
+            deffemModelCtx->model->draw(MODEL_SHADER);
+        }
+
+
+        // Draw heatmap
+        if (STATE->heatmap)
+        {
+            STATE->heatmap->draw(&heatmapShader, &textShader, TYPER);
+        }
 
 
         // Axis labels
-        const auto axisLabelXRotation = glm::transpose(glm::lookAt(fvec3(0.0f), eye, glm::vec3(0.0f, 1.0f, 0.0f)));
-        const auto axisLabelYRotation = glm::transpose(glm::lookAt(fvec3(0.0f), eye, glm::vec3(0.0f, 1.0f, 0.0f)));
-        const auto axisLabelZRotation = glm::transpose(glm::lookAt(fvec3(0.0f), eye, glm::vec3(0.0f, 1.0f, 0.0f)));
+        const auto axisLabelXRotation = transpose(lookAt(fvec3(0.0f), eye, vec3(0.0f, 1.0f, 0.0f)));
+        const auto axisLabelYRotation = transpose(lookAt(fvec3(0.0f), eye, vec3(0.0f, 1.0f, 0.0f)));
+        const auto axisLabelZRotation = transpose(lookAt(fvec3(0.0f), eye, vec3(0.0f, 1.0f, 0.0f)));
 
         rectShader.use();
         rectShader.setMat4("projection", translatedProjection);
@@ -261,59 +288,38 @@ int main()
         rectShader.setMat4("model_t", axisLabelX_t);
         rectShader.setMat4("model", axisLabelXRotation);
         rectShader.setVec3("textColor", vec3(1.0f, 0.0f, 0.0f));
-        typer->bindTexture('X');
+        TYPER->bindTexture('X');
         axisLabelX.draw(&rectShader);
 
         // Draw y axis label
         rectShader.setVec3("textColor", vec3(0.0f, 1.0f, 0.0f));
         rectShader.setMat4("model_t", axisLabelY_t);
         rectShader.setMat4("model", axisLabelYRotation);
-        typer->bindTexture('Y');
+        TYPER->bindTexture('Y');
         axisLabelY.draw(&rectShader);
 
         // Draw z axis label
         rectShader.setVec3("textColor", vec3(0.0f, 0.0f, 1.0f));
         rectShader.setMat4("model_t", axisLabelZ_t);
         rectShader.setMat4("model", axisLabelZRotation);
-        typer->bindTexture('Z');
+        TYPER->bindTexture('Z');
         axisLabelZ.draw(&rectShader);
 
 
-        // Draw mesh    
-        mesh.draw(&meshShader);
-
-
-        // Draw DEFFEM model
-        const auto deffemModelCtx = state->currentModelContext();
-        if (deffemModelCtx)
-        {
-            deffemModelCtx->model->draw(modelShader);
-        }
-
-
-        
-
-
-        // Draw heatmap
-        if (state->heatmap)
-        {
-            state->heatmap->draw(&heatmapShader, &textShader, typer);
-        }
-
-
         // Draw buttons
-        repeatAnimationButton->draw(&buttonShader);
-        firstAnimationStepButton->draw(&buttonShader);
-        playAnimationButton->draw(&buttonShader);
-        lastAnimationStepButton->draw(&buttonShader);
-        scalePointUpButton->draw(&buttonShader);
-        scalePointDownButton->draw(&buttonShader);
-        decreaseAnimationSpeedButton->draw(&buttonShader);
-        increaseAnimationSpeedButton->draw(&buttonShader);
+        REPEAT_ANIMATION_BUTTON->draw(&buttonShader);
+        FIRST_ANIMATION_STEP_BUTTON->draw(&buttonShader);
+        PLAY_ANIMATION_BUTTON->draw(&buttonShader);
+        LAST_ANIMATION_STEP_BUTTON->draw(&buttonShader);
+        SCALE_POINT_UP_BUTTON->draw(&buttonShader);
+        SCALE_POINT_DOWN_BUTTON->draw(&buttonShader);
+        DECREASE_ANIMATION_SPEED_BUTTON->draw(&buttonShader);
+        INCREASE_ANIMATION_SPEED_BUTTON->draw(&buttonShader);
+        SHOW_GRID_BUTTON->draw(&buttonShader);
 
 
         // Display state info 
-        state->displayStateInfoText(globalTextShader, typer);
+        STATE->displayStateInfoText(GLOBAL_TEXT_SHADER, TYPER);
 
 
         // Check and call events and swap the buffers
@@ -323,8 +329,23 @@ int main()
 
     // De-allocate all resources once they've outlived their purpose:
     glfwTerminate();
-    delete typer;
-    delete globalTextShader;
+
+    delete TYPER;
+    delete GLOBAL_TEXT_SHADER;
+    delete STATE;
+    delete MODEL_SHADER;
+    delete MES_SHADER;
+    delete SPH_SHADER;
+    
+    delete REPEAT_ANIMATION_BUTTON;
+    delete PLAY_ANIMATION_BUTTON;
+    delete SCALE_POINT_UP_BUTTON;
+    delete SCALE_POINT_DOWN_BUTTON;
+    delete LAST_ANIMATION_STEP_BUTTON;
+    delete FIRST_ANIMATION_STEP_BUTTON;
+    delete DECREASE_ANIMATION_SPEED_BUTTON;
+    delete INCREASE_ANIMATION_SPEED_BUTTON;
+    delete SHOW_GRID_BUTTON;
 
     return 0;
 }
@@ -339,9 +360,9 @@ ModelContext* loadModel(const string& filename)
 
     const auto modelInfo = FileParser::readSections(filename, vertices, indices);
 
-    modelOriginDeviation.x = -vertices[0];
-    modelOriginDeviation.y = -vertices[1];
-    modelOriginDeviation.z = -vertices[2];
+    MODEL_ORIGIN_DEVIATION.x = -vertices[0];
+    MODEL_ORIGIN_DEVIATION.y = -vertices[1];
+    MODEL_ORIGIN_DEVIATION.z = -vertices[2];
 
 
     if (indices.empty())
@@ -370,28 +391,28 @@ void fileDropCallback(GLFWwindow* window, const int count, const char** paths)
     std::vector<std::string> v(paths, paths + count);
     std::sort(v.begin(), v.end());
 
-    state->clearModels();
+    STATE->clearModels();
 
     for (const auto& path : v)
     {
         auto model = loadModel(path);
-        state->deffemModelContexts.push_back(model);
+        STATE->deffemModelContexts.push_back(model);
     }
 
-    state->refresh();
+    STATE->refresh();
 
-    const auto ctx = state->currentModelContext();
+    const auto ctx = STATE->currentModelContext();
     if (ctx && ctx->info.elementCount == 0)
     {
-        modelShader = sphShader;
+        MODEL_SHADER = SPH_SHADER;
     }
     else if (ctx)
     {
-        modelShader = mesShader;
-    } 
+        MODEL_SHADER = MES_SHADER;
+    }
 
-    modelShader->use();
-    modelShader->setVec3("intersection", settings.modelIntersection);
+    MODEL_SHADER->use();
+    MODEL_SHADER->setVec3("intersection", SETTINGS.modelIntersection);
 }
 
 void processInput(GLFWwindow* window)
@@ -408,16 +429,16 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     {
         if (action == GLFW_PRESS || action == GLFW_REPEAT)
         {
-            state->animation.stop();
-            state->previousModel();
+            STATE->animation.stop();
+            STATE->previousModel();
         }
     }
     else if (key == GLFW_KEY_RIGHT)
     {
         if (action == GLFW_PRESS || action == GLFW_REPEAT)
         {
-            state->animation.stop();
-            state->nextModel();
+            STATE->animation.stop();
+            STATE->nextModel();
         }
     }
     else if (key == GLFW_KEY_SPACE)
@@ -425,23 +446,23 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         if (action == GLFW_PRESS || action == GLFW_REPEAT)
         {
             cout << "[EVENT] Play/Stop animation" << endl;
-            if (state->animation.isFinished)
+            if (STATE->animation.isFinished)
             {
-                state->restartAnimation();
+                STATE->restartAnimation();
             }
             else
             {
-                state->animation.play = !state->animation.play;
+                STATE->animation.play = !STATE->animation.play;
             }
 
 
-            if (state->animation.play)
+            if (STATE->animation.play)
             {
-                playAnimationButton->changeTexture("./resources/stop_ctrl.jpg");
+                PLAY_ANIMATION_BUTTON->changeTexture("./resources/stop_ctrl.jpg");
             }
             else
             {
-                playAnimationButton->changeTexture("./resources/play_ctrl.jpg");
+                PLAY_ANIMATION_BUTTON->changeTexture("./resources/play_ctrl.jpg");
             }
         }
     }
@@ -450,10 +471,10 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         if (action == GLFW_PRESS)
         {
             cout << "[EVENT] Reset settings" << endl;
-            settings.resetAll();
-            state->modelScale = settings.modelScale;
-            state->animation.tickMillis = milliseconds(settings.animationTickMillis);
-            glPointSize(settings.pointSize);
+            SETTINGS.resetAll();
+            STATE->modelScale = SETTINGS.modelScale;
+            STATE->animation.tickMillis = milliseconds(SETTINGS.animationTickMillis);
+            glPointSize(SETTINGS.pointSize);
         }
     }
 }
@@ -467,173 +488,190 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
         {
             if (mods == GLFW_MOD_CONTROL)
             {
-                state->mouse.pressedWith(GLFW_MOD_CONTROL);
+                STATE->mouse.pressedWith(GLFW_MOD_CONTROL);
             }
             else if (mods == GLFW_MOD_SHIFT)
             {
-                state->mouse.pressedWith(GLFW_MOD_SHIFT);
+                STATE->mouse.pressedWith(GLFW_MOD_SHIFT);
             }
             else
             {
-                state->mouse.pressed();
-                const auto mousePos = state->mouse.position;
-                buttonsListener(fvec2(mousePos.x, state->screenSize.y - mousePos.y));
+                STATE->mouse.pressed();
+                const auto mousePos = STATE->mouse.position;
+                buttonsListener(fvec2(mousePos.x, STATE->screenSize.y - mousePos.y));
             }
         }
         else if (action == GLFW_RELEASE)
         {
-            state->mouse.released();
+            STATE->mouse.released();
         }
     }
     else if (button == GLFW_MOUSE_BUTTON_2)
     {
         if (action == GLFW_PRESS)
         {
-            state->mouse.pressedWith(GLFW_MOD_CONTROL);
+            STATE->mouse.pressedWith(GLFW_MOD_CONTROL);
         }
         else if (action == GLFW_RELEASE)
         {
-            state->mouse.released();
+            STATE->mouse.released();
         }
     }
 }
 
 void buttonsListener(const fvec2 mousePos)
 {
-    if (playAnimationButton->isClicked(mousePos))
+    if (PLAY_ANIMATION_BUTTON->isClicked(mousePos))
     {
         cout << "[EVENT] Play/Stop animation" << endl;
-        if (state->animation.isFinished)
+        if (STATE->animation.isFinished)
         {
-            state->restartAnimation();
+            STATE->restartAnimation();
         }
         else
         {
-            state->animation.play = !state->animation.play;
+            STATE->animation.play = !STATE->animation.play;
         }
 
-        if (state->animation.play)
+        if (STATE->animation.play)
         {
-            playAnimationButton->changeTexture("./resources/stop_ctrl.jpg");
+            PLAY_ANIMATION_BUTTON->changeTexture("./resources/stop_ctrl.jpg");
         }
         else
         {
-            playAnimationButton->changeTexture("./resources/play_ctrl.jpg");
+            PLAY_ANIMATION_BUTTON->changeTexture("./resources/play_ctrl.jpg");
         }
     }
-    else if (repeatAnimationButton->isClicked(mousePos))
+    else if (REPEAT_ANIMATION_BUTTON->isClicked(mousePos))
     {
-        state->animation.repeat = !state->animation.repeat;
-        cout << "[EVENT] Repeat animation: " << state->animation.repeat << endl;
-        if (state->animation.repeat)
+        STATE->animation.repeat = !STATE->animation.repeat;
+        cout << "[EVENT] Repeat animation: " << STATE->animation.repeat << endl;
+        if (STATE->animation.repeat)
         {
-            repeatAnimationButton->changeTexture("./resources/repeat_on.jpg");
-        } else
+            REPEAT_ANIMATION_BUTTON->changeTexture("./resources/repeat_on.jpg");
+        }
+        else
         {
-            repeatAnimationButton->changeTexture("./resources/repeat_off.jpg");
+            REPEAT_ANIMATION_BUTTON->changeTexture("./resources/repeat_off.jpg");
         }
     }
-    else if (firstAnimationStepButton->isClicked(mousePos))
+    else if (FIRST_ANIMATION_STEP_BUTTON->isClicked(mousePos))
     {
         cout << "[EVENT] First step" << endl;
-        state->changeModel(0);
+        STATE->changeModel(0);
     }
-    else if (lastAnimationStepButton->isClicked(mousePos))
+    else if (LAST_ANIMATION_STEP_BUTTON->isClicked(mousePos))
     {
         cout << "[EVENT] Last step" << endl;
-        state->changeModel(state->deffemModelContexts.size() - 1);
+        STATE->changeModel(STATE->deffemModelContexts.size() - 1);
     }
-    else if (scalePointUpButton->isClicked(mousePos))
+    else if (SCALE_POINT_UP_BUTTON->isClicked(mousePos))
     {
-        glPointSize(settings.pointSize += 1.0);
-        cout << "[EVENT] Point size: " << settings.pointSize << endl;
+        glPointSize(SETTINGS.pointSize += 1.0);
+        cout << "[EVENT] Point size: " << SETTINGS.pointSize << endl;
     }
-    else if (scalePointDownButton->isClicked(mousePos))
+    else if (SCALE_POINT_DOWN_BUTTON->isClicked(mousePos))
     {
-        if (settings.pointSize > 1)
+        if (SETTINGS.pointSize > 1)
         {
-            glPointSize(settings.pointSize -= 1.0);
+            glPointSize(SETTINGS.pointSize -= 1.0);
         }
-        cout << "[EVENT] Point size: " << settings.pointSize << endl;
+        cout << "[EVENT] Point size: " << SETTINGS.pointSize << endl;
     }
-    else if (decreaseAnimationSpeedButton->isClicked(mousePos))
+    else if (DECREASE_ANIMATION_SPEED_BUTTON->isClicked(mousePos))
     {
-        state->animation.tickMillis += milliseconds(5);
-        cout << "[EVENT] Animation tick: " << state->animation.tickMillis.count() << "ms" << endl;
+        STATE->animation.tickMillis += milliseconds(5);
+        cout << "[EVENT] Animation tick: " << STATE->animation.tickMillis.count() << "ms" << endl;
     }
-    else if (increaseAnimationSpeedButton->isClicked(mousePos) && state->animation.tickMillis.count() >= 5)
+    else if (INCREASE_ANIMATION_SPEED_BUTTON->isClicked(mousePos) && STATE->animation.tickMillis.count() >= 5)
     {
-        state->animation.tickMillis -= milliseconds(5);
-        cout << "[EVENT] Animation tick: " << state->animation.tickMillis.count() << "ms" << endl;
+        STATE->animation.tickMillis -= milliseconds(5);
+        cout << "[EVENT] Animation tick: " << STATE->animation.tickMillis.count() << "ms" << endl;
+    }
+    else if (SHOW_GRID_BUTTON->isClicked(mousePos))
+    {
+        cout << "[EVENT] Show grid: " << !GRID_PLANE->showGrid << endl;
+        GRID_PLANE->showGrid = !GRID_PLANE->showGrid;
+        if (GRID_PLANE->showGrid)
+        {
+            SHOW_GRID_BUTTON->changeTexture("./resources/grid_shown.jpg");
+        }
+        else
+        {
+            SHOW_GRID_BUTTON->changeTexture("./resources/grid_hidden.jpg");
+        }
     }
 }
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos)
 {
-    const auto mousePos = state->mouse.position;
+    const auto mousePos = STATE->mouse.position;
 
-    if (state->mouse.isPressedWithControl)
+    if (STATE->mouse.isPressedWithControl)
     {
-        state->camera.offset.x += (xpos - mousePos.x) * 0.0002f;
-        state->camera.offset.y += (ypos - mousePos.y) * 0.0002f;
+        STATE->camera.offset.x += (xpos - mousePos.x) * 0.0002f;
+        STATE->camera.offset.y += (ypos - mousePos.y) * 0.0002f;
     }
-    else if (state->mouse.isPressedWithShift)
+    else if (STATE->mouse.isPressedWithShift)
     {
         const auto sy = (ypos - mousePos.y) * 0.0005f;
-        state->modelScale -= sy;
+        STATE->modelScale -= sy;
     }
-    else if (state->mouse.isPressed)
+    else if (STATE->mouse.isPressed)
     {
-        state->camera.theta += (xpos - mousePos.x) * 0.01f;
-        state->camera.phi += (ypos - mousePos.y) * 0.01f;
+        STATE->camera.theta += (xpos - mousePos.x) * 0.01f;
+        STATE->camera.phi += (ypos - mousePos.y) * 0.01f;
 
-        if (state->camera.phi > 3.139f) state->camera.phi = 3.139f;
-        if (state->camera.phi < 0.01f) state->camera.phi = 0.01f;
+        if (STATE->camera.phi > 3.139f) STATE->camera.phi = 3.139f;
+        if (STATE->camera.phi < 0.01f) STATE->camera.phi = 0.01f;
     }
 
-    state->mouse.position.x = xpos;
-    state->mouse.position.y = ypos;
+    STATE->mouse.position.x = xpos;
+    STATE->mouse.position.y = ypos;
 }
 
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    if (state->camera.fov >= 1.0f && state->camera.fov <= 45.0f)
-        state->camera.fov -= yoffset;
-    if (state->camera.fov <= 1.0f)
-        state->camera.fov = 1.0f;
-    if (state->camera.fov >= 45.0f)
-        state->camera.fov = 45.0f;
+    if (STATE->camera.fov >= 1.0f && STATE->camera.fov <= 45.0f)
+        STATE->camera.fov -= yoffset;
+    if (STATE->camera.fov <= 1.0f)
+        STATE->camera.fov = 1.0f;
+    if (STATE->camera.fov >= 45.0f)
+        STATE->camera.fov = 45.0f;
 }
 
 
 void windowSizeCallback(GLFWwindow* window, int width, int height)
 {
-    if (width > 0 && height > 0) {
+    if (width > 0 && height > 0)
+    {
         glViewport(0, 0, width, height);
 
         const auto screenSize = fvec2(width, height);
-        state->screenSize = screenSize;
+        STATE->screenSize = screenSize;
 
-        state->HUDprojection = ortho(0.0f, static_cast<GLfloat>(width), 0.0f,
-            static_cast<GLfloat>(height));
+        STATE->HUDprojection = ortho(0.0f, static_cast<GLfloat>(width), 0.0f,
+                                     static_cast<GLfloat>(height));
 
-        if (state->heatmap)
+        if (STATE->heatmap)
         {
-            state->heatmap->setPosition(fvec2(25, height / 2));
+            STATE->heatmap->setPosition(fvec2(25, height / 2));
         }
 
-        globalTextShader->setMat4("projection", state->HUDprojection);
+        GLOBAL_TEXT_SHADER->setMat4("projection", STATE->HUDprojection);
 
-        repeatAnimationButton->setPosition(fvec2(width - 160.0f, height - 40.0f));
-        firstAnimationStepButton->setPosition(fvec2(width - 120.0f, height - 40.0f));
-        playAnimationButton->setPosition(fvec2(width - 80.0f, height - 40.0f));
-        lastAnimationStepButton->setPosition(fvec2(width - 40.0f, height - 40.0f));
+        REPEAT_ANIMATION_BUTTON->setPosition(fvec2(width - 160.0f, height - 40.0f));
+        FIRST_ANIMATION_STEP_BUTTON->setPosition(fvec2(width - 120.0f, height - 40.0f));
+        PLAY_ANIMATION_BUTTON->setPosition(fvec2(width - 80.0f, height - 40.0f));
+        LAST_ANIMATION_STEP_BUTTON->setPosition(fvec2(width - 40.0f, height - 40.0f));
 
-        scalePointDownButton->setPosition(fvec2(width - 80.0f, height - 80.0f));
-        scalePointUpButton->setPosition(fvec2(width - 40.0f, height - 80.0f));
+        SCALE_POINT_DOWN_BUTTON->setPosition(fvec2(width - 80.0f, height - 80.0f));
+        SCALE_POINT_UP_BUTTON->setPosition(fvec2(width - 40.0f, height - 80.0f));
 
-        decreaseAnimationSpeedButton->setPosition(fvec2(width - 80.0f, height - 120.0f));
-        increaseAnimationSpeedButton->setPosition(fvec2(width - 40.0f, height - 120.0f));
+        DECREASE_ANIMATION_SPEED_BUTTON->setPosition(fvec2(width - 80.0f, height - 120.0f));
+        INCREASE_ANIMATION_SPEED_BUTTON->setPosition(fvec2(width - 40.0f, height - 120.0f));
+
+        SHOW_GRID_BUTTON->setPosition(fvec2(width - 25.0f, 5.0));
     }
 }
 
